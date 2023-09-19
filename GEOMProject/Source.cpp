@@ -9,10 +9,9 @@
 
 void mainRenderLoop();
 int init();
-//void framebufferSizeCallback(GLFWwindow* window, int width, int height);
-
+void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 #define WINDOW_HEIGHT   720
-#define WINDOE_WIDTH    1280
+#define WINDOW_WIDTH    1280
 
 GLFWwindow* window;
 
@@ -23,6 +22,10 @@ GLint program_linked;
 GLint shader_compiled;
 GLsizei log_length = 0;
 GLchar message[1024];
+
+GLint g_gl_width = 1280;
+GLint g_gl_height = 720;
+GLFWwindow* g_window = 0;
 
 
 GLfloat triangle_vertecies[] =
@@ -71,7 +74,7 @@ int init()
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    window = glfwCreateWindow(1280, 720, "OpenGL", NULL, NULL);
+    window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "OpenGL", NULL, NULL);
 
     if (window == NULL)
     {
@@ -81,6 +84,7 @@ int init()
 
         return -1;
     }
+
 
     glfwMakeContextCurrent(window);
 
@@ -160,16 +164,16 @@ int init()
 
 void mainRenderLoop()
 {
-    glViewport(0, 0, 1280, 720);
-
     //glClearColor(.2f, .2f, .2f, 1.0f);
+    glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-
+    //glViewport(0, 0, width, height);
 
     while (!glfwWindowShouldClose(window))
     {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glViewport(0, 0, g_gl_width, g_gl_height);
 
         glUseProgram(shader_program_object);
         glBindVertexArray(vertex_array_object);
@@ -188,7 +192,9 @@ void mainRenderLoop()
     glfwTerminate();
 }
 
-//void framebufferSizeCallback(GLFWwindow* window, int width, int height)
-//{
-//    glViewport(0, 0, width, height);
-//}
+void framebufferSizeCallback(GLFWwindow* window, int width, int height)
+{
+    glViewport(0, 0, width, height);
+    g_gl_height = height;
+    g_gl_width = width;
+}
