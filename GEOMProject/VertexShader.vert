@@ -1,8 +1,25 @@
 #version 460
 
-in vec3 attrib_position;
+layout (location = 0) in vec3 position;
+layout (location = 1) in vec3 position_Bez;
+//layout (location = 1) in vec3 color;
+
+uniform mat4 proj, view, model, vert;
+uniform int surface;
+out vec3 vertexColor;
 
 void main()
 {
-    gl_Position = vec4(attrib_position, 1.0);
-}
+	if (surface == 0)
+	{
+		gl_Position = proj * view * model * vert * vec4(position, 1.0);
+		vertexColor = vec3(0.0f, 1.0f, 1.0f);
+	}
+	else if (surface == 1)
+	{
+		gl_Position = proj * view * model * vert * vec4(position_Bez, 1.0);
+		vertexColor = vec3(1.0f, 1.0f, 0.0f);
+	}
+	
+	
+};

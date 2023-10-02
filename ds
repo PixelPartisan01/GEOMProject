@@ -1,0 +1,48 @@
+[33mcommit 073f5d3afa26bbe8f2c4e554aa333b28ad0e1fdc[m[33m ([m[1;36mHEAD -> [m[1;32mSándor[m[33m)[m
+Merge: 63c10a8 cb68a0d
+Author: Váradi Sándor <varadisandor011@gmail.com>
+Date:   Tue Oct 3 13:43:54 2023 +0200
+
+    -
+
+[33mcommit 63c10a8f5af6f569ce256ddfcb9dae52bfd45159[m
+Author: Váradi Sándor <varadisandor011@gmail.com>
+Date:   Tue Oct 3 13:41:23 2023 +0200
+
+    Beziér-felület pontjainak legenerálása (javított)
+
+[33mcommit b3490dbc76a4fe1bbf79b78e728f4ce7f0088ee6[m
+Author: Váradi Sándor <varadisandor011@gmail.com>
+Date:   Mon Oct 2 18:22:02 2023 +0200
+
+    Bezier-felület pontjainak legenerálása.
+
+[33mcommit cb68a0d53bf43a6baf59f41ae4378874cb9426f9[m[33m ([m[1;31morigin/Sándor[m[33m)[m
+Author: Váradi Sándor <varadisandor011@gmail.com>
+Date:   Mon Oct 2 18:22:02 2023 +0200
+
+    Bezier-felület pontjainak legenerálása.
+
+[33mcommit e708875b7d4cd8677ac018572c5d94c9df4f821d[m
+Author: Váradi Sándor <varadisandor011@gmail.com>
+Date:   Tue Sep 19 15:22:24 2023 +0200
+
+    framebufferSizeCallback / gl_utils
+
+[33mcommit 7b36c9da05283bd75e005e8060b639ba0e78366c[m[33m ([m[1;31morigin/master[m[33m)[m
+Author: Váradi Sándor <60932792+PixelPartisan01@users.noreply.github.com>
+Date:   Tue Sep 19 13:02:50 2023 +0200
+
+    Add files via upload
+
+[33mcommit b3ec7fdae6c68885c2a4e8cc7f0bbf4f1251009d[m[33m ([m[1;32mmaster[m[33m)[m
+Author: varad <varad@SµNDOR_GPE>
+Date:   Tue Sep 19 12:58:09 2023 +0200
+
+    Add project files.
+
+[33mcommit e2b737490840698517c13ca86a3e833c3d1fb25c[m
+Author: varad <varad@SµNDOR_GPE>
+Date:   Tue Sep 19 12:57:44 2023 +0200
+
+    Add .gitattributes and .gitignore.
