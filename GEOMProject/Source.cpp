@@ -141,17 +141,17 @@ void keyCallBack()
 
 GLfloat factorial(int n)
 {
-    bool handle_odd =   false;
-    GLfloat upto_number =   n;
+    bool handle_odd = false;
+    GLfloat upto_number = n;
 
     if ((n & 1) == 1)
     {
-        upto_number -=  1;
-        handle_odd   =  true;
+        upto_number -= 1;
+        handle_odd = true;
     }
-    
-    GLfloat next_sum    =   upto_number;
-    GLfloat next_multi  =   upto_number;
+
+    GLfloat next_sum = upto_number;
+    GLfloat next_multi = upto_number;
     GLfloat factorial = 1;
 
     while (next_sum >= 2)
@@ -174,7 +174,7 @@ void genGrid(GLint N, GLint M)
 {
     controll_vertices.clear();
 
-    GLfloat r; 
+    GLfloat r;
     srand((unsigned int)time(NULL));
 
     //printf("\nKontroll pontok:\n\n");
@@ -184,7 +184,7 @@ void genGrid(GLint N, GLint M)
         {
             //r = (GLfloat)(rand() % M);
             //r = 0.0;
-            if ((i == 0.0f || j == 0.0f) || (i == N-1 || j == M - 1))
+            if ((i == 0.0f || j == 0.0f) || (i == N - 1 || j == M - 1))
             {
                 r = 0.0;
             }
@@ -193,7 +193,7 @@ void genGrid(GLint N, GLint M)
                 r = 1.0;
             }
 
-            controll_vertices.push_back({i,j,r});
+            controll_vertices.push_back({ i,j,r });
             printf("[%lf; %lf; %lf]\n", i, j, r);
         }
     }
@@ -203,7 +203,7 @@ void genGrid(GLint N, GLint M)
 
 GLfloat B(GLint nm, GLint ij, GLfloat uv)
 {
-    return (factorial(nm) / (factorial(ij) * factorial(nm - ij)))* pow(uv, ij)* pow(1 - uv, nm - ij);
+    return (factorial(nm) / (factorial(ij) * factorial(nm - ij))) * pow(uv, ij) * pow(1 - uv, nm - ij);
 }
 
 void genBezier(GLint N, GLint M)
@@ -221,9 +221,9 @@ void genBezier(GLint N, GLint M)
             {
                 for (GLint j = 0; j < M; j++)
                 {
-                    xBezier.push_back(B(N-1, i, u) * B(M-1, j, v) * controll_vertices[i * M + j][0]);
-                    yBezier.push_back(B(N-1, i, u) * B(M-1, j, v) * controll_vertices[i * M + j][1]);
-                    zBezier.push_back(B(N-1, i, u) * B(M-1, j, v) * controll_vertices[i * M + j][2]);
+                    xBezier.push_back(B(N - 1, i, u) * B(M - 1, j, v) * controll_vertices[i * M + j][0]);
+                    yBezier.push_back(B(N - 1, i, u) * B(M - 1, j, v) * controll_vertices[i * M + j][1]);
+                    zBezier.push_back(B(N - 1, i, u) * B(M - 1, j, v) * controll_vertices[i * M + j][2]);
                 }
             }
 
@@ -238,7 +238,7 @@ void genBezier(GLint N, GLint M)
     printf("\n\nBezier-felület pontjai:\n\n");
     for (auto v : Bezier)
     {
-        
+
         printf("[%lf; %lf; %lf]\n", v[0], v[1], v[2]);
     }
 }
@@ -274,7 +274,7 @@ int init()
 
     fprintf(stderr, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
 
-    genGrid(4,4);
+    genGrid(4, 4);
 
     glGenBuffers(VBO, vertex_buffer_object);
     glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[0]);
@@ -282,7 +282,7 @@ int init()
 
 
     glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[1]);
-    
+
     glBufferData(GL_ARRAY_BUFFER, Bezier.size() * sizeof(std::vector<GLfloat>), Bezier.data(), GL_STATIC_DRAW);
 
     glGenVertexArrays(VAO, vertex_array_object);
@@ -329,7 +329,7 @@ int init()
 
     shader_program_object = glCreateProgram();
 
-    glBindAttribLocation(shader_program_object, 0, "attrib_position"); 
+    glBindAttribLocation(shader_program_object, 0, "attrib_position");
     glAttachShader(shader_program_object, vertex_shader_object);
     glAttachShader(shader_program_object, fragment_shader_object);
     glLinkProgram(shader_program_object);
@@ -342,7 +342,7 @@ int init()
         return -4;
     }
 
-    
+
 
     //GLint u_time_loc = glGetUniformLocation(shader_program_object, "u_time_s");
 
@@ -380,7 +380,7 @@ void mainRenderLoop()
     glEnable(GL_DEPTH_TEST);
 
     GLint surface_loc = glGetUniformLocation(shader_program_object, "surface");
-    
+
     while (!glfwWindowShouldClose(g_window))
     {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -402,7 +402,7 @@ void mainRenderLoop()
 
         /*TODO Fix This*/
         glBindVertexArray(vertex_array_object[0]);
-        
+
         glUniform1i(surface_loc, 0);
         glEnableVertexAttribArray(0);
         for (int i = 0; i < controll_vertices.size(); i++)
