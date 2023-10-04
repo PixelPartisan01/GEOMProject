@@ -2,7 +2,7 @@
 
 layout (location = 0) in vec3 position;
 layout (location = 1) in vec3 position_Bez;
-//layout (location = 1) in vec3 color;
+layout (location = 2) in vec3 position_con_mesh;
 
 uniform mat4 proj, view, model, vert;
 uniform int surface;
@@ -19,6 +19,11 @@ void main()
 	{
 		gl_Position = proj * view * model * vert * vec4(position_Bez, 1.0);
 		vertexColor = vec3(1.0f, 1.0f, 0.0f);
+	}
+		else if (surface == 2)
+	{
+		gl_Position = proj * view * model * vert * vec4(position_con_mesh, 1.0);
+		vertexColor = vec3(0.0f, 1.0f, 1.0f);
 	}
 	
 	

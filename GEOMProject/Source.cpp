@@ -14,9 +14,10 @@
 #include    <numeric>
 #include    "gl_utils.h"
 #include    "maths_funcs.h"
+#include <omp.h>
 
 
-#define VBO 2
+#define VBO 3
 #define VAO 1
 
 void keyCallBack();
@@ -50,6 +51,8 @@ std::vector<GLfloat> sur;
 
 //std::vector<GLfloat> controll_vertices[4][4];
 
+GLint N = 6;
+GLint M = 4;
 std::vector<GLfloat> K;
 std::vector<GLfloat> J;
 std::vector<GLfloat> xBezier;
@@ -69,8 +72,9 @@ GLfloat Pz = -(2.0f * f * n) / (f - n);
 GLfloat proj_mat[] = { Sx, 0.0f, 0.0f, 0.0f, 0.0f, Sy, 0.0f, 0.0f, 0.0f, 0.0f, Sz, -1.0f, 0.0f, 0.0f, Pz, 0.0f };
 GLfloat cam_speed = 1.0f;
 GLfloat cam_yaw_speed = 10.0f;
-GLfloat cam_pos[] = { 0.0f, 0.0f, 12.0f };
+GLfloat cam_pos[]{ (GLfloat)(N-1)/2.0f, (GLfloat)(M-1)/2.0f, 5.0f };
 GLfloat cam_yaw = 0.0f;
+GLfloat cam_pitch = 0.0f;
 GLboolean cam_moved = false;
 GLint d = 1;
 GLdouble pos = 0.0;
@@ -104,6 +108,16 @@ int main()
 
     return 0;
 }
+
+GLdouble deltaTime()
+{
+    static double previous_seconds = glfwGetTime();
+    double current_seconds = glfwGetTime();
+    double elapsed_seconds = current_seconds - previous_seconds;
+    previous_seconds = current_seconds;
+    return elapsed_seconds;
+}
+
 
 void keyCallBack()
 {
@@ -194,16 +208,16 @@ void genGrid(GLint N, GLint M)
             }
 
             controll_vertices.push_back({ i,j,r });
-            printf("[%lf; %lf; %lf]\n", i, j, r);
+            //printf("[%lf; %lf; %lf]\n", i, j, r);
         }
     }
 
     genBezier(N, M);
 }
 
-GLfloat B(GLint nm, GLint ij, GLfloat uv)
+GLfloat B(GLint n_m, GLint i_j, GLfloat u_v)
 {
-    return (factorial(nm) / (factorial(ij) * factorial(nm - ij))) * pow(uv, ij) * pow(1 - uv, nm - ij);
+    return (factorial(n_m) / (factorial(i_j) * factorial(n_m - i_j))) * pow(u_v, i_j) * pow(1 - u_v, n_m - i_j);
 }
 
 void genBezier(GLint N, GLint M)
@@ -235,12 +249,12 @@ void genBezier(GLint N, GLint M)
         }
     }
 
-    printf("\n\nBezier-felület pontjai:\n\n");
-    for (auto v : Bezier)
-    {
+    //printf("\n\nBezier-felület pontjai:\n\n");
+    //for (auto v : Bezier)
+    //{
 
-        printf("[%lf; %lf; %lf]\n", v[0], v[1], v[2]);
-    }
+    //    printf("[%lf; %lf; %lf]\n", v[0], v[1], v[2]);
+    //}
 }
 
 int init()
@@ -253,7 +267,7 @@ int init()
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    g_window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "OpenGL", NULL, NULL);
+    g_window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "GEOM Project", NULL, NULL);
 
     if (g_window == NULL)
     {
@@ -264,8 +278,6 @@ int init()
         return -1;
     }
 
-    printf("%d\n", factorial(200));
-
     glfwMakeContextCurrent(g_window);
 
     GLenum err = glewInit();
@@ -274,26 +286,32 @@ int init()
 
     fprintf(stderr, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
 
-    genGrid(4, 4);
+    //cam_pos[0] = ((GLfloat)(N - 1) / 2.0f);
+    //cam_pos[1] = ((GLfloat)(M - 1) / 2.0f);
+    //cam_pos[2] = 4.0;
+
+    genGrid(N, M);
 
     glGenBuffers(VBO, vertex_buffer_object);
-    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[0]);
-    glBufferData(GL_ARRAY_BUFFER, controll_vertices.size() * sizeof(std::vector<GLfloat>), controll_vertices.data(), GL_STATIC_DRAW);
+    //glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[0]);
+    //glBufferData(GL_ARRAY_BUFFER, controll_vertices.size() * sizeof(std::vector<GLfloat>), controll_vertices.data(), GL_STATIC_DRAW);
 
 
-    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[1]);
-
-    glBufferData(GL_ARRAY_BUFFER, Bezier.size() * sizeof(std::vector<GLfloat>), Bezier.data(), GL_STATIC_DRAW);
+    //glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[1]);
+    //glBufferData(GL_ARRAY_BUFFER, Bezier.size() * sizeof(std::vector<GLfloat>), Bezier.data(), GL_STATIC_DRAW);
 
     glGenVertexArrays(VAO, vertex_array_object);
 
     glBindVertexArray(vertex_array_object[0]);
-    //glEnableVertexAttribArray(0);
+
     glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[0]);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
 
     glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[1]);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+
+    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[2]);
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, NULL);
 
     parse_file_into_str("VertexShader.vert", vertex_shader, 1024 * 256);
     parse_file_into_str("FragmentShader.frag", fragment_shader, 1024 * 256);
@@ -364,15 +382,6 @@ int init()
     return 0;
 }
 
-GLdouble deltaTime()
-{
-    static double previous_seconds = glfwGetTime();
-    double current_seconds = glfwGetTime();
-    double elapsed_seconds = current_seconds - previous_seconds;
-    previous_seconds = current_seconds;
-    return elapsed_seconds;
-}
-
 void mainRenderLoop()
 {
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -380,6 +389,11 @@ void mainRenderLoop()
     glEnable(GL_DEPTH_TEST);
 
     GLint surface_loc = glGetUniformLocation(shader_program_object, "surface");
+
+    std::vector<GLfloat> cont_v_tmp;
+    GLint temp = 1;
+
+    int br = 1;
 
     while (!glfwWindowShouldClose(g_window))
     {
@@ -397,18 +411,18 @@ void mainRenderLoop()
             glUniformMatrix4fv(view_mat_location, 1, GL_FALSE, view_mat.m);
         }
 
-        glPointSize(20.0);
+        glPointSize(10.0);
 
 
-        /*TODO Fix This*/
+        /*TODO: Fix This*/
         glBindVertexArray(vertex_array_object[0]);
 
         glUniform1i(surface_loc, 0);
         glEnableVertexAttribArray(0);
+        glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[0]);
         for (int i = 0; i < controll_vertices.size(); i++)
         {
-            glBufferData(GL_ARRAY_BUFFER, controll_vertices.size() * sizeof(GLfloat), controll_vertices[i].data(), GL_STATIC_DRAW);
-            glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[0]);
+            glBufferData(GL_ARRAY_BUFFER, controll_vertices[i].size() * sizeof(GLfloat), controll_vertices[i].data(), GL_STATIC_DRAW);
             glDrawArrays(GL_POINTS, 0, controll_vertices[i].size());
         }
 
@@ -416,12 +430,69 @@ void mainRenderLoop()
 
         glUniform1i(surface_loc, 1);
         glEnableVertexAttribArray(1);
+        glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[1]);
         for (int i = 0; i < Bezier.size(); i++)
         {
-            glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[1]);
-            glBufferData(GL_ARRAY_BUFFER, Bezier.size() * sizeof(GLfloat), Bezier[i].data(), GL_STATIC_DRAW);
-            glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[1]);
+            glBufferData(GL_ARRAY_BUFFER, Bezier[i].size() * sizeof(GLfloat), Bezier[i].data(), GL_STATIC_DRAW);
             glDrawArrays(GL_POINTS, 0, Bezier[i].size());
+        }
+
+        /*TODO: Megoldani GL_LINE_LOOP használatával*/
+        glUniform1i(surface_loc, 2);
+        glEnableVertexAttribArray(2);
+        glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[2]);
+        for (int i = 0; i < controll_vertices.size() - M; i++)
+        {
+
+            if (br == M)
+            {
+                br = 1;
+                continue;
+            }
+
+            cont_v_tmp.push_back(controll_vertices[i][0]);
+            cont_v_tmp.push_back(controll_vertices[i][1]);
+            cont_v_tmp.push_back(controll_vertices[i][2]);
+
+            cont_v_tmp.push_back(controll_vertices[i + 1][0]);
+            cont_v_tmp.push_back(controll_vertices[i + 1][1]);
+            cont_v_tmp.push_back(controll_vertices[i + 1][2]);
+
+            cont_v_tmp.push_back(controll_vertices[i + M][0]);
+            cont_v_tmp.push_back(controll_vertices[i + M][1]);
+            cont_v_tmp.push_back(controll_vertices[i + M][2]);
+
+            cont_v_tmp.push_back(controll_vertices[i + M + 1][0]);
+            cont_v_tmp.push_back(controll_vertices[i + M + 1][1]);
+            cont_v_tmp.push_back(controll_vertices[i + M + 1][2]);
+
+            
+
+            glBufferData(GL_ARRAY_BUFFER, cont_v_tmp.size() * sizeof(GLfloat), cont_v_tmp.data(), GL_STATIC_DRAW);
+            glDrawArrays(GL_LINES, 0, cont_v_tmp.size());
+            cont_v_tmp.clear();
+
+            cont_v_tmp.push_back(controll_vertices[i][0]);
+            cont_v_tmp.push_back(controll_vertices[i][1]);
+            cont_v_tmp.push_back(controll_vertices[i][2]);
+
+            cont_v_tmp.push_back(controll_vertices[i + M][0]);
+            cont_v_tmp.push_back(controll_vertices[i + M][1]);
+            cont_v_tmp.push_back(controll_vertices[i + M][2]);
+
+            cont_v_tmp.push_back(controll_vertices[i + M + 1][0]);
+            cont_v_tmp.push_back(controll_vertices[i + M + 1][1]);
+            cont_v_tmp.push_back(controll_vertices[i + M + 1][2]);
+
+            cont_v_tmp.push_back(controll_vertices[i + 1][0]);
+            cont_v_tmp.push_back(controll_vertices[i + 1][1]);
+            cont_v_tmp.push_back(controll_vertices[i + 1][2]);
+
+            glBufferData(GL_ARRAY_BUFFER, cont_v_tmp.size() * sizeof(GLfloat), cont_v_tmp.data(), GL_STATIC_DRAW);
+            glDrawArrays(GL_LINES, 0, cont_v_tmp.size());
+
+            br++;
+            cont_v_tmp.clear();
         }
 
         glBindVertexArray(0);
