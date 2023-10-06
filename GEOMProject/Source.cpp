@@ -52,7 +52,10 @@ std::vector<GLfloat> sur;
 //std::vector<GLfloat> controll_vertices[4][4];
 
 GLint N = 6;
-GLint M = 4;
+GLint M = 5;
+GLfloat step_u = 0.03;
+GLfloat step_v = 0.03;
+
 std::vector<GLfloat> K;
 std::vector<GLfloat> J;
 std::vector<GLfloat> xBezier;
@@ -183,7 +186,7 @@ GLfloat factorial(int n)
     return factorial;
 }
 
-/* NxM - es kontroll háló legenerálása */
+/* MxN - es kontroll háló legenerálása */
 void genGrid(GLint N, GLint M)
 {
     controll_vertices.clear();
@@ -227,9 +230,9 @@ void genBezier(GLint N, GLint M)
     yBezier.clear();
     zBezier.clear();
 
-    for (GLfloat u = 0.0f; u <= 1.0f; u += 0.05f)
+    for (GLfloat u = 0.0f; u <= 1.0f; u += step_u)
     {
-        for (GLfloat v = 0.0f; v <= 1.0f; v += 0.05f)
+        for (GLfloat v = 0.0f; v <= 1.0f; v += step_v)
         {
             for (GLint i = 0; i < N; i++)
             {
@@ -240,7 +243,7 @@ void genBezier(GLint N, GLint M)
                     zBezier.push_back(B(N - 1, i, u) * B(M - 1, j, v) * controll_vertices[i * M + j][2]);
                 }
             }
-
+            
             Bezier.push_back({ std::accumulate(xBezier.begin(), xBezier.end(), 0.0f), std::accumulate(yBezier.begin(), yBezier.end(), 0.0f), std::accumulate(zBezier.begin(), zBezier.end(), 0.0f) });
 
             xBezier.clear();
@@ -266,6 +269,7 @@ int init()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_SAMPLES, 4);
 
     g_window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "GEOM Project", NULL, NULL);
 
@@ -387,10 +391,13 @@ void mainRenderLoop()
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_MULTISAMPLE);
+
 
     GLint surface_loc = glGetUniformLocation(shader_program_object, "surface");
 
     std::vector<GLfloat> cont_v_tmp;
+    std::vector<GLfloat> Bez_v_tmp;
     GLint temp = 1;
 
     int br = 1;
@@ -494,6 +501,65 @@ void mainRenderLoop()
             br++;
             cont_v_tmp.clear();
         }
+
+        br = 1;
+
+
+        /*glUniform1i(surface_loc, 1);
+        glEnableVertexAttribArray(1);
+        glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[1]);
+        for (int i = 0; i < Bezier.size() - (1/std::ceil(step_v)); i++)
+        {
+
+            if (br == 1 / std::ceil(step_v))
+            {
+                br = 1;
+                continue;
+            }
+
+            Bez_v_tmp.push_back(Bezier[i][0]);
+            Bez_v_tmp.push_back(Bezier[i][1]);
+            Bez_v_tmp.push_back(Bezier[i][2]);
+
+            Bez_v_tmp.push_back(Bezier[i + M][0]);
+            Bez_v_tmp.push_back(Bezier[i + M][1]);
+            Bez_v_tmp.push_back(Bezier[i + M][2]);
+
+            Bez_v_tmp.push_back(Bezier[i + M + 1][0]);
+            Bez_v_tmp.push_back(Bezier[i + M + 1][1]);
+            Bez_v_tmp.push_back(Bezier[i + M + 1][2]);
+
+            Bez_v_tmp.push_back(Bezier[i + 1][0]);
+            Bez_v_tmp.push_back(Bezier[i + 1][1]);
+            Bez_v_tmp.push_back(Bezier[i + 1][2]);
+
+
+            glBufferData(GL_ARRAY_BUFFER, Bez_v_tmp.size() * sizeof(GLfloat), Bez_v_tmp.data(), GL_STATIC_DRAW);
+            glDrawArrays(GL_LINES, 0, Bez_v_tmp.size());
+            Bez_v_tmp.clear();*/
+
+            //cont_v_tmp.push_back(controll_vertices[i][0]);
+            //cont_v_tmp.push_back(controll_vertices[i][1]);
+            //cont_v_tmp.push_back(controll_vertices[i][2]);
+
+            //cont_v_tmp.push_back(controll_vertices[i + M][0]);
+            //cont_v_tmp.push_back(controll_vertices[i + M][1]);
+            //cont_v_tmp.push_back(controll_vertices[i + M][2]);
+
+            //cont_v_tmp.push_back(controll_vertices[i + M + 1][0]);
+            //cont_v_tmp.push_back(controll_vertices[i + M + 1][1]);
+            //cont_v_tmp.push_back(controll_vertices[i + M + 1][2]);
+
+            //cont_v_tmp.push_back(controll_vertices[i + 1][0]);
+            //cont_v_tmp.push_back(controll_vertices[i + 1][1]);
+            //cont_v_tmp.push_back(controll_vertices[i + 1][2]);
+
+            //glBufferData(GL_ARRAY_BUFFER, cont_v_tmp.size() * sizeof(GLfloat), cont_v_tmp.data(), GL_STATIC_DRAW);
+            //glDrawArrays(GL_LINES, 0, cont_v_tmp.size());
+
+        //    br++;
+        //    Bez_v_tmp.clear();
+        //}
 
         glBindVertexArray(0);
         glUseProgram(0);
