@@ -14,8 +14,10 @@
 #include    <numeric>
 #include    "gl_utils.h"
 #include    "maths_funcs.h"
-#include <omp.h>
-
+#include    <omp.h>
+#include    "imGui/imgui.h"
+#include    "imGui/imgui_impl_glfw.h"
+#include    "imGui/imgui_impl_opengl3.h"
 
 #define VBO 3
 #define VAO 1
@@ -290,6 +292,15 @@ int init()
 
     fprintf(stderr, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
 
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    ImGui::StyleColorsClassic();
+
+    ImGui_ImplGlfw_InitForOpenGL(g_window, true);
+    ImGui_ImplOpenGL3_Init("#version 460");
+
     //cam_pos[0] = ((GLfloat)(N - 1) / 2.0f);
     //cam_pos[1] = ((GLfloat)(M - 1) / 2.0f);
     //cam_pos[2] = 4.0;
@@ -386,6 +397,12 @@ int init()
     return 0;
 }
 
+bool wireframe = true;
+bool surface = false;
+float slider_x = 0.0f;
+float slider_y = 0.0f;
+float slider_z = 0.0f;
+
 void mainRenderLoop()
 {
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -404,8 +421,31 @@ void mainRenderLoop()
 
     while (!glfwWindowShouldClose(g_window))
     {
+
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glViewport(0, 0, g_gl_width, g_gl_height);
+
+        glfwPollEvents();
+
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+        {
+            static float f = 0.0f;
+            static int counter = 0;
+
+            ImGui::Begin("Menu");
+            ImGui::RadioButton("Wireframe", &wireframe);
+            ImGui::RadioButton("Surface", &surface);
+            ImGui::SameLine();
+            ImGui::SliderFloat("Slider", &slider_x,-10.0f, 10.0f);
+            ImGui::SliderFloat("Slider", &slider_y, -10.0f, 10.0f);
+            ImGui::SliderFloat("Slider", &slider_z, -10.0f, 10.0f);
+
+            ImGui::End();
+        }
+
         DT = deltaTime();
 
         glUseProgram(shader_program_object);
@@ -564,12 +604,19 @@ void mainRenderLoop()
         glBindVertexArray(0);
         glUseProgram(0);
 
+
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
         keyCallBack();
         glfwSwapBuffers(g_window);
-        glfwPollEvents();
     }
 
     Bezier.clear();
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+    glfwDestroyWindow(g_window);
     glfwTerminate();
 }
 
