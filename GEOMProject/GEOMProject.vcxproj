@@ -94,6 +94,8 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>C:\glfw-3.3.8.bin.WIN64\include;C:\glew-2.1.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -128,6 +130,8 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>C:\glfw-3.3.8.bin.WIN64\include;C:\glew-2.1.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -141,6 +145,12 @@
   <ItemGroup>
     <ClCompile Include="glew.c" />
     <ClCompile Include="gl_utils.cpp" />
+    <ClCompile Include="imGui\imgui.cpp" />
+    <ClCompile Include="imGui\imgui_draw.cpp" />
+    <ClCompile Include="imGui\imgui_impl_glfw.cpp" />
+    <ClCompile Include="imGui\imgui_impl_opengl3.cpp" />
+    <ClCompile Include="imGui\imgui_tables.cpp" />
+    <ClCompile Include="imGui\imgui_widgets.cpp" />
     <ClCompile Include="maths_funcs.cpp" />
     <ClCompile Include="Source.cpp" />
   </ItemGroup>
@@ -150,6 +160,15 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="gl_utils.h" />
+    <ClInclude Include="imGui\imconfig.h" />
+    <ClInclude Include="imGui\imgui.h" />
+    <ClInclude Include="imGui\imgui_impl_glfw.h" />
+    <ClInclude Include="imGui\imgui_impl_opengl3.h" />
+    <ClInclude Include="imGui\imgui_impl_opengl3_loader.h" />
+    <ClInclude Include="imGui\imgui_internal.h" />
+    <ClInclude Include="imGui\imstb_rectpack.h" />
+    <ClInclude Include="imGui\imstb_textedit.h" />
+    <ClInclude Include="imGui\imstb_truetype.h" />
     <ClInclude Include="maths_funcs.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

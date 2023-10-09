@@ -14,8 +14,10 @@
 #include    <numeric>
 #include    "gl_utils.h"
 #include    "maths_funcs.h"
-#include <omp.h>
-
+#include    <omp.h>
+#include    "imGui/imgui.h"
+#include    "imGui/imgui_impl_glfw.h"
+#include    "imGui/imgui_impl_opengl3.h"
 
 #define VBO 3
 #define VAO 1
@@ -50,9 +52,9 @@ std::vector<std::vector<GLfloat>> controll_vertices;
 std::vector<GLfloat> sur;
 
 //std::vector<GLfloat> controll_vertices[4][4];
-
-GLint N = 6;
-GLint M = 5;
+//
+//GLint N = 6;
+//GLint M = 5;
 GLfloat step_u = 0.03;
 GLfloat step_v = 0.03;
 
@@ -62,6 +64,22 @@ std::vector<GLfloat> xBezier;
 std::vector<GLfloat> yBezier;
 std::vector<GLfloat> zBezier;
 std::vector<std::vector<GLfloat>> Bezier;
+
+bool    wireframe = true;
+bool    surface = false;
+bool    cont_mesh = true;
+bool    cont_points = true;
+float   slider_x = 0.0f;
+float   slider_y = 0.0f;
+float   slider_z = 0.0f;
+int     slider_N = 5;
+int     slider_M = 4;
+int     slider_N_old = 0;
+int     slider_M_old = 0;
+float   slider_U = 0.05;
+float   slider_V = 0.05;
+float  slider_U_old = slider_U;
+float  slider_V_old = slider_V;
 
 GLfloat n = 0.1f; // near
 GLfloat f = 100.0f; // far
@@ -75,7 +93,7 @@ GLfloat Pz = -(2.0f * f * n) / (f - n);
 GLfloat proj_mat[] = { Sx, 0.0f, 0.0f, 0.0f, 0.0f, Sy, 0.0f, 0.0f, 0.0f, 0.0f, Sz, -1.0f, 0.0f, 0.0f, Pz, 0.0f };
 GLfloat cam_speed = 1.0f;
 GLfloat cam_yaw_speed = 10.0f;
-GLfloat cam_pos[]{ (GLfloat)(N-1)/2.0f, (GLfloat)(M-1)/2.0f, 5.0f };
+GLfloat cam_pos[]{ (GLfloat)(slider_N-1)/2.0f, (GLfloat)(slider_M-1)/2.0f, 5.0f };
 GLfloat cam_yaw = 0.0f;
 GLfloat cam_pitch = 0.0f;
 GLboolean cam_moved = false;
@@ -230,9 +248,9 @@ void genBezier(GLint N, GLint M)
     yBezier.clear();
     zBezier.clear();
 
-    for (GLfloat u = 0.0f; u <= 1.0f; u += step_u)
+    for (GLfloat u = 0.0f; u <= 1.0f; u += slider_U)
     {
-        for (GLfloat v = 0.0f; v <= 1.0f; v += step_v)
+        for (GLfloat v = 0.0f; v <= 1.0f; v += slider_V)
         {
             for (GLint i = 0; i < N; i++)
             {
@@ -290,11 +308,20 @@ int init()
 
     fprintf(stderr, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
 
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    ImGui::StyleColorsClassic();
+
+    ImGui_ImplGlfw_InitForOpenGL(g_window, true);
+    ImGui_ImplOpenGL3_Init("#version 460");
+
     //cam_pos[0] = ((GLfloat)(N - 1) / 2.0f);
     //cam_pos[1] = ((GLfloat)(M - 1) / 2.0f);
     //cam_pos[2] = 4.0;
 
-    genGrid(N, M);
+    //genGrid(N, M);
 
     glGenBuffers(VBO, vertex_buffer_object);
     //glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[0]);
@@ -386,6 +413,14 @@ int init()
     return 0;
 }
 
+/*TODO*/
+void genWireframe()
+{
+
+}
+
+bool credits = false;
+bool show_window = true;
 void mainRenderLoop()
 {
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -402,10 +437,85 @@ void mainRenderLoop()
 
     int br = 1;
 
+    genGrid(slider_N, slider_M);
+
     while (!glfwWindowShouldClose(g_window))
     {
+
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glViewport(0, 0, g_gl_width, g_gl_height);
+
+        glfwPollEvents();
+
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+        {
+            ImGui::Begin("Menu");
+
+            ImGui::Checkbox("Controll Mesh", &cont_mesh);
+            ImGui::Checkbox("Controll Points", &cont_points);
+
+            ImGui::SliderInt("N", &slider_N, 4, 10);
+            ImGui::SliderInt("M", &slider_M, 4, 10);
+
+            ImGui::CaptureKeyboardFromApp(false);
+            ImGui::SliderFloat("U", &slider_U, 0.1, 0.01);
+            ImGui::SliderFloat("V", &slider_V, 0.1, 0.01);
+
+            ImGui::End();
+        }
+
+        if (slider_M != slider_M_old || slider_N != slider_N_old)
+        {
+            genGrid(slider_N, slider_M);
+            slider_M_old = slider_M;
+            slider_N_old = slider_N;
+
+            cont_v_tmp.clear();
+
+            for (int i = 0; i < controll_vertices.size(); i++)
+            {
+
+                if (br == slider_M)
+                {
+                    br = 1;
+
+                    continue;
+                }
+
+                cont_v_tmp.push_back(controll_vertices[i][0]);
+                cont_v_tmp.push_back(controll_vertices[i][1]);
+                cont_v_tmp.push_back(controll_vertices[i][2]);
+
+                cont_v_tmp.push_back(controll_vertices[i + 1][0]);
+                cont_v_tmp.push_back(controll_vertices[i + 1][1]);
+                cont_v_tmp.push_back(controll_vertices[i + 1][2]);
+
+                br++;
+            }
+
+
+            for (int i = 0; i < controll_vertices.size() - slider_M; i++)
+            {
+                cont_v_tmp.push_back(controll_vertices[i][0]);
+                cont_v_tmp.push_back(controll_vertices[i][1]);
+                cont_v_tmp.push_back(controll_vertices[i][2]);
+
+                cont_v_tmp.push_back(controll_vertices[i + slider_M][0]);
+                cont_v_tmp.push_back(controll_vertices[i + slider_M][1]);
+                cont_v_tmp.push_back(controll_vertices[i + slider_M][2]);
+            }
+        }
+
+        if (slider_U != slider_U_old || slider_V != slider_V_old)
+        {
+            genBezier(slider_N, slider_M);
+            slider_U_old = slider_U;
+            slider_V_old = slider_V;
+        }
+
         DT = deltaTime();
 
         glUseProgram(shader_program_object);
@@ -424,13 +534,16 @@ void mainRenderLoop()
         /*TODO: Fix This*/
         glBindVertexArray(vertex_array_object[0]);
 
-        glUniform1i(surface_loc, 0);
-        glEnableVertexAttribArray(0);
-        glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[0]);
-        for (int i = 0; i < controll_vertices.size(); i++)
+        if (cont_points)
         {
-            glBufferData(GL_ARRAY_BUFFER, controll_vertices[i].size() * sizeof(GLfloat), controll_vertices[i].data(), GL_STATIC_DRAW);
-            glDrawArrays(GL_POINTS, 0, controll_vertices[i].size());
+            glUniform1i(surface_loc, 0);
+            glEnableVertexAttribArray(0);
+            glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[0]);
+            for (int i = 0; i < controll_vertices.size(); i++)
+            {
+                glBufferData(GL_ARRAY_BUFFER, controll_vertices[i].size() * sizeof(GLfloat), controll_vertices[i].data(), GL_STATIC_DRAW);
+                glDrawArrays(GL_POINTS, 0, controll_vertices[i].size());
+            }
         }
 
         glPointSize(5.0);
@@ -444,132 +557,35 @@ void mainRenderLoop()
             glDrawArrays(GL_POINTS, 0, Bezier[i].size());
         }
 
-        /*TODO: Megoldani GL_LINE_LOOP használatával*/
-        glUniform1i(surface_loc, 2);
-        glEnableVertexAttribArray(2);
-        glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[2]);
-        for (int i = 0; i < controll_vertices.size() - M; i++)
+        
+
+        if (cont_mesh)
         {
-
-            if (br == M)
-            {
-                br = 1;
-                continue;
-            }
-
-            cont_v_tmp.push_back(controll_vertices[i][0]);
-            cont_v_tmp.push_back(controll_vertices[i][1]);
-            cont_v_tmp.push_back(controll_vertices[i][2]);
-
-            cont_v_tmp.push_back(controll_vertices[i + 1][0]);
-            cont_v_tmp.push_back(controll_vertices[i + 1][1]);
-            cont_v_tmp.push_back(controll_vertices[i + 1][2]);
-
-            cont_v_tmp.push_back(controll_vertices[i + M][0]);
-            cont_v_tmp.push_back(controll_vertices[i + M][1]);
-            cont_v_tmp.push_back(controll_vertices[i + M][2]);
-
-            cont_v_tmp.push_back(controll_vertices[i + M + 1][0]);
-            cont_v_tmp.push_back(controll_vertices[i + M + 1][1]);
-            cont_v_tmp.push_back(controll_vertices[i + M + 1][2]);
-
-            
+            glUniform1i(surface_loc, 2);
+            glEnableVertexAttribArray(2);
+            glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[2]);
 
             glBufferData(GL_ARRAY_BUFFER, cont_v_tmp.size() * sizeof(GLfloat), cont_v_tmp.data(), GL_STATIC_DRAW);
             glDrawArrays(GL_LINES, 0, cont_v_tmp.size());
-            cont_v_tmp.clear();
-
-            cont_v_tmp.push_back(controll_vertices[i][0]);
-            cont_v_tmp.push_back(controll_vertices[i][1]);
-            cont_v_tmp.push_back(controll_vertices[i][2]);
-
-            cont_v_tmp.push_back(controll_vertices[i + M][0]);
-            cont_v_tmp.push_back(controll_vertices[i + M][1]);
-            cont_v_tmp.push_back(controll_vertices[i + M][2]);
-
-            cont_v_tmp.push_back(controll_vertices[i + M + 1][0]);
-            cont_v_tmp.push_back(controll_vertices[i + M + 1][1]);
-            cont_v_tmp.push_back(controll_vertices[i + M + 1][2]);
-
-            cont_v_tmp.push_back(controll_vertices[i + 1][0]);
-            cont_v_tmp.push_back(controll_vertices[i + 1][1]);
-            cont_v_tmp.push_back(controll_vertices[i + 1][2]);
-
-            glBufferData(GL_ARRAY_BUFFER, cont_v_tmp.size() * sizeof(GLfloat), cont_v_tmp.data(), GL_STATIC_DRAW);
-            glDrawArrays(GL_LINES, 0, cont_v_tmp.size());
-
-            br++;
-            cont_v_tmp.clear();
         }
 
-        br = 1;
-
-
-        /*glUniform1i(surface_loc, 1);
-        glEnableVertexAttribArray(1);
-        glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[1]);
-        for (int i = 0; i < Bezier.size() - (1/std::ceil(step_v)); i++)
-        {
-
-            if (br == 1 / std::ceil(step_v))
-            {
-                br = 1;
-                continue;
-            }
-
-            Bez_v_tmp.push_back(Bezier[i][0]);
-            Bez_v_tmp.push_back(Bezier[i][1]);
-            Bez_v_tmp.push_back(Bezier[i][2]);
-
-            Bez_v_tmp.push_back(Bezier[i + M][0]);
-            Bez_v_tmp.push_back(Bezier[i + M][1]);
-            Bez_v_tmp.push_back(Bezier[i + M][2]);
-
-            Bez_v_tmp.push_back(Bezier[i + M + 1][0]);
-            Bez_v_tmp.push_back(Bezier[i + M + 1][1]);
-            Bez_v_tmp.push_back(Bezier[i + M + 1][2]);
-
-            Bez_v_tmp.push_back(Bezier[i + 1][0]);
-            Bez_v_tmp.push_back(Bezier[i + 1][1]);
-            Bez_v_tmp.push_back(Bezier[i + 1][2]);
-
-
-            glBufferData(GL_ARRAY_BUFFER, Bez_v_tmp.size() * sizeof(GLfloat), Bez_v_tmp.data(), GL_STATIC_DRAW);
-            glDrawArrays(GL_LINES, 0, Bez_v_tmp.size());
-            Bez_v_tmp.clear();*/
-
-            //cont_v_tmp.push_back(controll_vertices[i][0]);
-            //cont_v_tmp.push_back(controll_vertices[i][1]);
-            //cont_v_tmp.push_back(controll_vertices[i][2]);
-
-            //cont_v_tmp.push_back(controll_vertices[i + M][0]);
-            //cont_v_tmp.push_back(controll_vertices[i + M][1]);
-            //cont_v_tmp.push_back(controll_vertices[i + M][2]);
-
-            //cont_v_tmp.push_back(controll_vertices[i + M + 1][0]);
-            //cont_v_tmp.push_back(controll_vertices[i + M + 1][1]);
-            //cont_v_tmp.push_back(controll_vertices[i + M + 1][2]);
-
-            //cont_v_tmp.push_back(controll_vertices[i + 1][0]);
-            //cont_v_tmp.push_back(controll_vertices[i + 1][1]);
-            //cont_v_tmp.push_back(controll_vertices[i + 1][2]);
-
-            //glBufferData(GL_ARRAY_BUFFER, cont_v_tmp.size() * sizeof(GLfloat), cont_v_tmp.data(), GL_STATIC_DRAW);
-            //glDrawArrays(GL_LINES, 0, cont_v_tmp.size());
-
-        //    br++;
-        //    Bez_v_tmp.clear();
-        //}
 
         glBindVertexArray(0);
         glUseProgram(0);
 
+
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
         keyCallBack();
         glfwSwapBuffers(g_window);
-        glfwPollEvents();
     }
 
     Bezier.clear();
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+    glfwDestroyWindow(g_window);
     glfwTerminate();
 }
 
