@@ -72,10 +72,14 @@ bool    cont_points = true;
 float   slider_x = 0.0f;
 float   slider_y = 0.0f;
 float   slider_z = 0.0f;
-int     slider_N = 4;
+int     slider_N = 5;
 int     slider_M = 4;
-int     slider_N_old = slider_N;
-int     slider_M_old = slider_M;
+int     slider_N_old = 0;
+int     slider_M_old = 0;
+float   slider_U = 0.05;
+float   slider_V = 0.05;
+float  slider_U_old = slider_U;
+float  slider_V_old = slider_V;
 
 GLfloat n = 0.1f; // near
 GLfloat f = 100.0f; // far
@@ -244,9 +248,9 @@ void genBezier(GLint N, GLint M)
     yBezier.clear();
     zBezier.clear();
 
-    for (GLfloat u = 0.0f; u <= 1.0f; u += step_u)
+    for (GLfloat u = 0.0f; u <= 1.0f; u += slider_U)
     {
-        for (GLfloat v = 0.0f; v <= 1.0f; v += step_v)
+        for (GLfloat v = 0.0f; v <= 1.0f; v += slider_V)
         {
             for (GLint i = 0; i < N; i++)
             {
@@ -409,7 +413,14 @@ int init()
     return 0;
 }
 
+/*TODO*/
+void genWireframe()
+{
 
+}
+
+bool credits = false;
+bool show_window = true;
 void mainRenderLoop()
 {
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -441,28 +452,68 @@ void mainRenderLoop()
         ImGui::NewFrame();
 
         {
-            //ImGui::SetNextWindowPos(ImVec2(32.0f, ImGui::GetIO().DisplaySize.y - 32.0f), ImGuiCond_Always, ImVec2(1.0f, 0.0f));
             ImGui::Begin("Menu");
-            //ImGui::PushStyleColor(ImGuiCol_, ImVec4(1.0f, 0.0f, 1.0f, 1.0f));
 
             ImGui::Checkbox("Controll Mesh", &cont_mesh);
             ImGui::Checkbox("Controll Points", &cont_points);
-            //ImGui::RadioButton("Wireframe", &wireframe);
-            //ImGui::RadioButton("Surface", &surface);
+
             ImGui::SliderInt("N", &slider_N, 4, 10);
             ImGui::SliderInt("M", &slider_M, 4, 10);
-            //ImGui::SliderFloat("X Slider", &slider_x,-10.0f, 10.0f);
-            //ImGui::SliderFloat("Y Slider", &slider_y, -10.0f, 10.0f);
-            //ImGui::SliderFloat("Z Slider", &slider_z, -10.0f, 10.0f);
+
+            ImGui::CaptureKeyboardFromApp(false);
+            ImGui::SliderFloat("U", &slider_U, 0.1, 0.01);
+            ImGui::SliderFloat("V", &slider_V, 0.1, 0.01);
 
             ImGui::End();
         }
 
         if (slider_M != slider_M_old || slider_N != slider_N_old)
         {
-            genGrid(slider_M, slider_N);
+            genGrid(slider_N, slider_M);
             slider_M_old = slider_M;
             slider_N_old = slider_N;
+
+            cont_v_tmp.clear();
+
+            for (int i = 0; i < controll_vertices.size(); i++)
+            {
+
+                if (br == slider_M)
+                {
+                    br = 1;
+
+                    continue;
+                }
+
+                cont_v_tmp.push_back(controll_vertices[i][0]);
+                cont_v_tmp.push_back(controll_vertices[i][1]);
+                cont_v_tmp.push_back(controll_vertices[i][2]);
+
+                cont_v_tmp.push_back(controll_vertices[i + 1][0]);
+                cont_v_tmp.push_back(controll_vertices[i + 1][1]);
+                cont_v_tmp.push_back(controll_vertices[i + 1][2]);
+
+                br++;
+            }
+
+
+            for (int i = 0; i < controll_vertices.size() - slider_M; i++)
+            {
+                cont_v_tmp.push_back(controll_vertices[i][0]);
+                cont_v_tmp.push_back(controll_vertices[i][1]);
+                cont_v_tmp.push_back(controll_vertices[i][2]);
+
+                cont_v_tmp.push_back(controll_vertices[i + slider_M][0]);
+                cont_v_tmp.push_back(controll_vertices[i + slider_M][1]);
+                cont_v_tmp.push_back(controll_vertices[i + slider_M][2]);
+            }
+        }
+
+        if (slider_U != slider_U_old || slider_V != slider_V_old)
+        {
+            genBezier(slider_N, slider_M);
+            slider_U_old = slider_U;
+            slider_V_old = slider_V;
         }
 
         DT = deltaTime();
@@ -506,124 +557,18 @@ void mainRenderLoop()
             glDrawArrays(GL_POINTS, 0, Bezier[i].size());
         }
 
-        if(cont_mesh)
-        { 
-            /*TODO: Megoldani GL_LINE_LOOP használatával*/
+        
+
+        if (cont_mesh)
+        {
             glUniform1i(surface_loc, 2);
             glEnableVertexAttribArray(2);
             glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[2]);
-            for (int i = 0; i < controll_vertices.size() - slider_M; i++)
-            {
 
-                if (br == slider_M)
-                {
-                    br = 1;
-                    continue;
-                }
-
-                cont_v_tmp.push_back(controll_vertices[i][0]);
-                cont_v_tmp.push_back(controll_vertices[i][1]);
-                cont_v_tmp.push_back(controll_vertices[i][2]);
-
-                cont_v_tmp.push_back(controll_vertices[i + 1][0]);
-                cont_v_tmp.push_back(controll_vertices[i + 1][1]);
-                cont_v_tmp.push_back(controll_vertices[i + 1][2]);
-
-                cont_v_tmp.push_back(controll_vertices[i + slider_M][0]);
-                cont_v_tmp.push_back(controll_vertices[i + slider_M][1]);
-                cont_v_tmp.push_back(controll_vertices[i + slider_M][2]);
-
-                cont_v_tmp.push_back(controll_vertices[i + slider_M + 1][0]);
-                cont_v_tmp.push_back(controll_vertices[i + slider_M + 1][1]);
-                cont_v_tmp.push_back(controll_vertices[i + slider_M + 1][2]);
-
-            
-
-                glBufferData(GL_ARRAY_BUFFER, cont_v_tmp.size() * sizeof(GLfloat), cont_v_tmp.data(), GL_STATIC_DRAW);
-                glDrawArrays(GL_LINES, 0, cont_v_tmp.size());
-                cont_v_tmp.clear();
-
-                cont_v_tmp.push_back(controll_vertices[i][0]);
-                cont_v_tmp.push_back(controll_vertices[i][1]);
-                cont_v_tmp.push_back(controll_vertices[i][2]);
-
-                cont_v_tmp.push_back(controll_vertices[i + slider_M][0]);
-                cont_v_tmp.push_back(controll_vertices[i + slider_M][1]);
-                cont_v_tmp.push_back(controll_vertices[i + slider_M][2]);
-
-                cont_v_tmp.push_back(controll_vertices[i + slider_M + 1][0]);
-                cont_v_tmp.push_back(controll_vertices[i + slider_M + 1][1]);
-                cont_v_tmp.push_back(controll_vertices[i + slider_M + 1][2]);
-
-                cont_v_tmp.push_back(controll_vertices[i + 1][0]);
-                cont_v_tmp.push_back(controll_vertices[i + 1][1]);
-                cont_v_tmp.push_back(controll_vertices[i + 1][2]);
-
-                glBufferData(GL_ARRAY_BUFFER, cont_v_tmp.size() * sizeof(GLfloat), cont_v_tmp.data(), GL_STATIC_DRAW);
-                glDrawArrays(GL_LINES, 0, cont_v_tmp.size());
-
-                br++;
-                cont_v_tmp.clear();
-            }
+            glBufferData(GL_ARRAY_BUFFER, cont_v_tmp.size() * sizeof(GLfloat), cont_v_tmp.data(), GL_STATIC_DRAW);
+            glDrawArrays(GL_LINES, 0, cont_v_tmp.size());
         }
-        br = 1;
 
-
-        /*glUniform1i(surface_loc, 1);
-        glEnableVertexAttribArray(1);
-        glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[1]);
-        for (int i = 0; i < Bezier.size() - (1/std::ceil(step_v)); i++)
-        {
-
-            if (br == 1 / std::ceil(step_v))
-            {
-                br = 1;
-                continue;
-            }
-
-            Bez_v_tmp.push_back(Bezier[i][0]);
-            Bez_v_tmp.push_back(Bezier[i][1]);
-            Bez_v_tmp.push_back(Bezier[i][2]);
-
-            Bez_v_tmp.push_back(Bezier[i + M][0]);
-            Bez_v_tmp.push_back(Bezier[i + M][1]);
-            Bez_v_tmp.push_back(Bezier[i + M][2]);
-
-            Bez_v_tmp.push_back(Bezier[i + M + 1][0]);
-            Bez_v_tmp.push_back(Bezier[i + M + 1][1]);
-            Bez_v_tmp.push_back(Bezier[i + M + 1][2]);
-
-            Bez_v_tmp.push_back(Bezier[i + 1][0]);
-            Bez_v_tmp.push_back(Bezier[i + 1][1]);
-            Bez_v_tmp.push_back(Bezier[i + 1][2]);
-
-
-            glBufferData(GL_ARRAY_BUFFER, Bez_v_tmp.size() * sizeof(GLfloat), Bez_v_tmp.data(), GL_STATIC_DRAW);
-            glDrawArrays(GL_LINES, 0, Bez_v_tmp.size());
-            Bez_v_tmp.clear();*/
-
-            //cont_v_tmp.push_back(controll_vertices[i][0]);
-            //cont_v_tmp.push_back(controll_vertices[i][1]);
-            //cont_v_tmp.push_back(controll_vertices[i][2]);
-
-            //cont_v_tmp.push_back(controll_vertices[i + M][0]);
-            //cont_v_tmp.push_back(controll_vertices[i + M][1]);
-            //cont_v_tmp.push_back(controll_vertices[i + M][2]);
-
-            //cont_v_tmp.push_back(controll_vertices[i + M + 1][0]);
-            //cont_v_tmp.push_back(controll_vertices[i + M + 1][1]);
-            //cont_v_tmp.push_back(controll_vertices[i + M + 1][2]);
-
-            //cont_v_tmp.push_back(controll_vertices[i + 1][0]);
-            //cont_v_tmp.push_back(controll_vertices[i + 1][1]);
-            //cont_v_tmp.push_back(controll_vertices[i + 1][2]);
-
-            //glBufferData(GL_ARRAY_BUFFER, cont_v_tmp.size() * sizeof(GLfloat), cont_v_tmp.data(), GL_STATIC_DRAW);
-            //glDrawArrays(GL_LINES, 0, cont_v_tmp.size());
-
-        //    br++;
-        //    Bez_v_tmp.clear();
-        //}
 
         glBindVertexArray(0);
         glUseProgram(0);
