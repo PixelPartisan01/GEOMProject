@@ -65,21 +65,21 @@ std::vector<GLfloat> yBezier;
 std::vector<GLfloat> zBezier;
 std::vector<std::vector<GLfloat>> Bezier;
 
-bool    wireframe = true;
-bool    surface = false;
-bool    cont_mesh = true;
-bool    cont_points = true;
-float   slider_x = 0.0f;
-float   slider_y = 0.0f;
-float   slider_z = 0.0f;
-int     slider_N = 5;
-int     slider_M = 4;
-int     slider_N_old = 0;
-int     slider_M_old = 0;
-float   slider_U = 0.05;
-float   slider_V = 0.05;
-float  slider_U_old = slider_U;
-float  slider_V_old = slider_V;
+bool    wireframe       = true;
+bool    surface         = false;
+bool    cont_mesh       = true;
+bool    cont_points     = true;
+float   slider_x        = 0.0f;
+float   slider_y        = 0.0f;
+float   slider_z        = 0.0f;
+int     slider_N        = 5;
+int     slider_M        = 4;
+int     slider_N_old    = 0;
+int     slider_M_old    = 0;
+float   slider_U        = 0.05;
+float   slider_V        = 0.05;
+float   slider_U_old    = 0.0f;
+float   slider_V_old    = 0.0f;
 
 GLfloat n = 0.1f; // near
 GLfloat f = 100.0f; // far
@@ -317,20 +317,8 @@ int init()
     ImGui_ImplGlfw_InitForOpenGL(g_window, true);
     ImGui_ImplOpenGL3_Init("#version 460");
 
-    //cam_pos[0] = ((GLfloat)(N - 1) / 2.0f);
-    //cam_pos[1] = ((GLfloat)(M - 1) / 2.0f);
-    //cam_pos[2] = 4.0;
-
-    //genGrid(N, M);
-
     glGenBuffers(VBO, vertex_buffer_object);
-    //glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[0]);
-    //glBufferData(GL_ARRAY_BUFFER, controll_vertices.size() * sizeof(std::vector<GLfloat>), controll_vertices.data(), GL_STATIC_DRAW);
-
-
-    //glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[1]);
-    //glBufferData(GL_ARRAY_BUFFER, Bezier.size() * sizeof(std::vector<GLfloat>), Bezier.data(), GL_STATIC_DRAW);
-
+    
     glGenVertexArrays(VAO, vertex_array_object);
 
     glBindVertexArray(vertex_array_object[0]);
@@ -514,6 +502,52 @@ void mainRenderLoop()
             genBezier(slider_N, slider_M);
             slider_U_old = slider_U;
             slider_V_old = slider_V;
+
+            Bez_v_tmp.clear();
+
+            br = 1;
+
+            for (int i = 0; i < Bezier.size(); i++)
+            {
+                if (br == (1.0f / slider_V))
+                {
+                    br = 1;
+                    continue;
+                }
+
+                Bez_v_tmp.push_back(Bezier[i][0]);
+                Bez_v_tmp.push_back(Bezier[i][1]);
+                Bez_v_tmp.push_back(Bezier[i][2]);
+
+                Bez_v_tmp.push_back(Bezier[i + 1][0]);
+                Bez_v_tmp.push_back(Bezier[i + 1][1]);
+                Bez_v_tmp.push_back(Bezier[i + 1][2]);
+
+                br++;
+            }
+
+            br = 1;
+
+            for (int i = 0; i < Bezier.size() - (1.0f / slider_U); i++)
+            {
+                //if (br == (1.0f / slider_U))
+                //{
+                //    br = 1;
+                //    continue;
+                //}
+
+                Bez_v_tmp.push_back(Bezier[i][0]);
+                Bez_v_tmp.push_back(Bezier[i][1]);
+                Bez_v_tmp.push_back(Bezier[i][2]);
+
+                Bez_v_tmp.push_back(Bezier[i + (1.0f / slider_U)][0]);
+                Bez_v_tmp.push_back(Bezier[i + (1.0f / slider_U)][1]);
+                Bez_v_tmp.push_back(Bezier[i + (1.0f / slider_U)][2]);
+
+                //br++;
+            }
+
+            //Bez_v_tmp.push_back(0.0f);
         }
 
         DT = deltaTime();
@@ -531,7 +565,7 @@ void mainRenderLoop()
         glPointSize(10.0);
 
 
-        /*TODO: Fix This*/
+        /*TODO: Fix This*/  
         glBindVertexArray(vertex_array_object[0]);
 
         if (cont_points)
@@ -551,13 +585,13 @@ void mainRenderLoop()
         glUniform1i(surface_loc, 1);
         glEnableVertexAttribArray(1);
         glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[1]);
-        for (int i = 0; i < Bezier.size(); i++)
+        glBufferData(GL_ARRAY_BUFFER, Bez_v_tmp.size() * sizeof(GLfloat), Bez_v_tmp.data(), GL_STATIC_DRAW);
+        glDrawArrays(GL_LINES, 0, Bez_v_tmp.size());
+/*        for (int i = 0; i < Bezier.size(); i++)
         {
             glBufferData(GL_ARRAY_BUFFER, Bezier[i].size() * sizeof(GLfloat), Bezier[i].data(), GL_STATIC_DRAW);
             glDrawArrays(GL_POINTS, 0, Bezier[i].size());
-        }
-
-        
+        } */     
 
         if (cont_mesh)
         {
