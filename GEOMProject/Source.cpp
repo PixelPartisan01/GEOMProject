@@ -76,8 +76,8 @@ int     slider_N        = 5;
 int     slider_M        = 4;
 int     slider_N_old    = 0;
 int     slider_M_old    = 0;
-float   slider_U        = 0.05;
-float   slider_V        = 0.05;
+float   slider_U        = 0.1;
+float   slider_V        = 0.1;
 float   slider_U_old    = 0.0f;
 float   slider_V_old    = 0.0f;
 
@@ -241,6 +241,8 @@ GLfloat B(GLint n_m, GLint i_j, GLfloat u_v)
     return (factorial(n_m) / (factorial(i_j) * factorial(n_m - i_j))) * pow(u_v, i_j) * pow(1 - u_v, n_m - i_j);
 }
 
+int num_V;
+
 void genBezier(GLint N, GLint M)
 {
     Bezier.clear();
@@ -248,10 +250,13 @@ void genBezier(GLint N, GLint M)
     yBezier.clear();
     zBezier.clear();
 
+
     for (GLfloat u = 0.0f; u <= 1.0f; u += slider_U)
     {
+        num_V = 0;
         for (GLfloat v = 0.0f; v <= 1.0f; v += slider_V)
         {
+            num_V++;
             for (GLint i = 0; i < N; i++)
             {
                 for (GLint j = 0; j < M; j++)
@@ -402,9 +407,44 @@ int init()
 }
 
 /*TODO*/
-void genWireframe()
+std::vector<GLfloat> genWireframe()
 {
+    std::vector<GLfloat> tmp;
 
+    int br = 1;
+
+    for (int i = 0; i < Bezier.size() - num_V; i++)
+    {
+        tmp.push_back(Bezier[i][0]);
+        tmp.push_back(Bezier[i][1]);
+        tmp.push_back(Bezier[i][2]);
+
+        tmp.push_back(Bezier[i + num_V][0]);
+        tmp.push_back(Bezier[i + num_V][1]);
+        tmp.push_back(Bezier[i + num_V][2]);
+    }
+
+    for (auto row = Bezier.begin(); row != Bezier.end() - 1; row++)
+    {
+        
+        if (br == std::ceil(1.0 / slider_V))
+        {
+            br = 1;
+            continue;
+        }
+
+        tmp.push_back(row[0][0]);
+        tmp.push_back(row[0][1]);
+        tmp.push_back(row[0][2]);
+
+        tmp.push_back(std::next(row)[0][0]);
+        tmp.push_back(std::next(row)[0][1]);
+        tmp.push_back(std::next(row)[0][2]);
+        
+        br++;
+    }
+
+    return tmp;
 }
 
 bool credits = false;
@@ -455,6 +495,9 @@ void mainRenderLoop()
             ImGui::End();
         }
 
+        if (slider_U == 0.0) slider_U = 1.0;
+        if (slider_V == 0.0) slider_V = 1.0;
+
         if (slider_M != slider_M_old || slider_N != slider_N_old)
         {
             genGrid(slider_N, slider_M);
@@ -484,7 +527,6 @@ void mainRenderLoop()
                 br++;
             }
 
-
             for (int i = 0; i < controll_vertices.size() - slider_M; i++)
             {
                 cont_v_tmp.push_back(controll_vertices[i][0]);
@@ -495,6 +537,8 @@ void mainRenderLoop()
                 cont_v_tmp.push_back(controll_vertices[i + slider_M][1]);
                 cont_v_tmp.push_back(controll_vertices[i + slider_M][2]);
             }
+
+            Bez_v_tmp = genWireframe();
         }
 
         if (slider_U != slider_U_old || slider_V != slider_V_old)
@@ -503,51 +547,9 @@ void mainRenderLoop()
             slider_U_old = slider_U;
             slider_V_old = slider_V;
 
-            Bez_v_tmp.clear();
+            Bez_v_tmp = genWireframe();
 
-            br = 1;
-
-            for (int i = 0; i < Bezier.size(); i++)
-            {
-                if (br == (1.0f / slider_V))
-                {
-                    br = 1;
-                    continue;
-                }
-
-                Bez_v_tmp.push_back(Bezier[i][0]);
-                Bez_v_tmp.push_back(Bezier[i][1]);
-                Bez_v_tmp.push_back(Bezier[i][2]);
-
-                Bez_v_tmp.push_back(Bezier[i + 1][0]);
-                Bez_v_tmp.push_back(Bezier[i + 1][1]);
-                Bez_v_tmp.push_back(Bezier[i + 1][2]);
-
-                br++;
-            }
-
-            br = 1;
-
-            for (int i = 0; i < Bezier.size() - (1.0f / slider_U); i++)
-            {
-                //if (br == (1.0f / slider_U))
-                //{
-                //    br = 1;
-                //    continue;
-                //}
-
-                Bez_v_tmp.push_back(Bezier[i][0]);
-                Bez_v_tmp.push_back(Bezier[i][1]);
-                Bez_v_tmp.push_back(Bezier[i][2]);
-
-                Bez_v_tmp.push_back(Bezier[i + (1.0f / slider_U)][0]);
-                Bez_v_tmp.push_back(Bezier[i + (1.0f / slider_U)][1]);
-                Bez_v_tmp.push_back(Bezier[i + (1.0f / slider_U)][2]);
-
-                //br++;
-            }
-
-            //Bez_v_tmp.push_back(0.0f);
+           //Bez_v_tmp.push_back(0.0f);
         }
 
         DT = deltaTime();
