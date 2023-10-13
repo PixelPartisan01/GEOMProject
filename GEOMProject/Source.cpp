@@ -22,10 +22,16 @@
 #define VBO 3
 #define VAO 1
 
+extern "C"
+{
+    _declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
+}
+
 void keyCallBack();
 void mainRenderLoop();
 int init();
 void framebufferSizeCallback(GLFWwindow* window, int width, int height);
+void mousebuttonCallback(GLFWwindow* window, int button, int action, int mods);
 void genBezier(int N, int M);
 void genGrid(GLint N, GLint M);
 GLdouble deltaTime();
@@ -76,8 +82,8 @@ int     slider_N        = 5;
 int     slider_M        = 4;
 int     slider_N_old    = 0;
 int     slider_M_old    = 0;
-float   slider_U        = 0.1;
-float   slider_V        = 0.1;
+float   slider_U        = 0.05;
+float   slider_V        = 0.05;
 float   slider_U_old    = 0.0f;
 float   slider_V_old    = 0.0f;
 
@@ -90,7 +96,7 @@ GLfloat Sx = inverse_range / aspect;
 GLfloat Sy = inverse_range;
 GLfloat Sz = -(f + n) / (f - n);
 GLfloat Pz = -(2.0f * f * n) / (f - n);
-GLfloat proj_mat[] = { Sx, 0.0f, 0.0f, 0.0f, 0.0f, Sy, 0.0f, 0.0f, 0.0f, 0.0f, Sz, -1.0f, 0.0f, 0.0f, Pz, 0.0f };
+mat4    proj_mat = { Sx, 0.0f, 0.0f, 0.0f, 0.0f, Sy, 0.0f, 0.0f, 0.0f, 0.0f, Sz, -1.0f, 0.0f, 0.0f, Pz, 0.0f };
 GLfloat cam_speed = 1.0f;
 GLfloat cam_yaw_speed = 10.0f;
 GLfloat cam_pos[]{ (GLfloat)(slider_N-1)/2.0f, (GLfloat)(slider_M-1)/2.0f, 5.0f };
@@ -117,6 +123,7 @@ int rot = 0;
 
 int main()
 {
+    T * R;
     int ret = init();
 
     if (ret != 0)
@@ -154,22 +161,22 @@ void keyCallBack()
     }
     if (glfwGetKey(g_window, GLFW_KEY_W))
     {
-        cam_pos[2] -= cam_speed * DT;
+        cam_pos[1] += cam_speed * DT;
         cam_moved = true;
     }
     if (glfwGetKey(g_window, GLFW_KEY_S))
     {
-        cam_pos[2] += cam_speed * DT;
+        cam_pos[1] -= cam_speed * DT;
         cam_moved = true;
     }
     if (glfwGetKey(g_window, GLFW_KEY_Q))
     {
-        cam_pos[1] -= cam_speed * DT;
+        cam_pos[2] += cam_speed * DT;
         cam_moved = true;
     }
     if (glfwGetKey(g_window, GLFW_KEY_E))
     {
-        cam_pos[1] += cam_speed * DT;
+        cam_pos[2] -= cam_speed * DT;
         cam_moved = true;
     }
 }
@@ -317,7 +324,7 @@ int init()
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-    ImGui::StyleColorsClassic();
+    ImGui::StyleColorsLight();
 
     ImGui_ImplGlfw_InitForOpenGL(g_window, true);
     ImGui_ImplOpenGL3_Init("#version 460");
@@ -396,12 +403,13 @@ int init()
 
     glUseProgram(shader_program_object);
     glUniformMatrix4fv(view_mat_location, 1, GL_FALSE, view_mat.m);
-    glUniformMatrix4fv(proj_mat_location, 1, GL_FALSE, proj_mat);
+    glUniformMatrix4fv(proj_mat_location, 1, GL_FALSE, proj_mat.m);
     glUniformMatrix4fv(model_mat_location, 1, GL_FALSE, model_mat.m);
     glUniformMatrix4fv(vert_mat_location, 1, GL_FALSE, vert_mat.m);
     glUniformMatrix4fv(vert_mat_fl_location, 1, GL_FALSE, vert_mat_fl.m);
 
     glfwSetFramebufferSizeCallback(g_window, framebufferSizeCallback);
+    glfwSetMouseButtonCallback(g_window, mousebuttonCallback);
 
     return 0;
 }
@@ -449,6 +457,7 @@ std::vector<GLfloat> genWireframe()
 
 bool credits = false;
 bool show_window = true;
+
 void mainRenderLoop()
 {
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -462,8 +471,6 @@ void mainRenderLoop()
     std::vector<GLfloat> cont_v_tmp;
     std::vector<GLfloat> Bez_v_tmp;
     GLint temp = 1;
-
-    int br = 1;
 
     genGrid(slider_N, slider_M);
 
@@ -497,9 +504,12 @@ void mainRenderLoop()
 
         if (slider_U == 0.0) slider_U = 1.0;
         if (slider_V == 0.0) slider_V = 1.0;
+        if (slider_M == 0) slider_M = 1;
+        if (slider_N == 0) slider_N = 1;
 
         if (slider_M != slider_M_old || slider_N != slider_N_old)
         {
+            int br = 1;
             genGrid(slider_N, slider_M);
             slider_M_old = slider_M;
             slider_N_old = slider_N;
@@ -566,7 +576,6 @@ void mainRenderLoop()
 
         glPointSize(10.0);
 
-
         /*TODO: Fix This*/  
         glBindVertexArray(vertex_array_object[0]);
 
@@ -582,18 +591,7 @@ void mainRenderLoop()
             }
         }
 
-        glPointSize(5.0);
-
-        glUniform1i(surface_loc, 1);
-        glEnableVertexAttribArray(1);
-        glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[1]);
-        glBufferData(GL_ARRAY_BUFFER, Bez_v_tmp.size() * sizeof(GLfloat), Bez_v_tmp.data(), GL_STATIC_DRAW);
-        glDrawArrays(GL_LINES, 0, Bez_v_tmp.size());
-/*        for (int i = 0; i < Bezier.size(); i++)
-        {
-            glBufferData(GL_ARRAY_BUFFER, Bezier[i].size() * sizeof(GLfloat), Bezier[i].data(), GL_STATIC_DRAW);
-            glDrawArrays(GL_POINTS, 0, Bezier[i].size());
-        } */     
+        glLineWidth(30.0);
 
         if (cont_mesh)
         {
@@ -603,6 +601,14 @@ void mainRenderLoop()
 
             glBufferData(GL_ARRAY_BUFFER, cont_v_tmp.size() * sizeof(GLfloat), cont_v_tmp.data(), GL_STATIC_DRAW);
             glDrawArrays(GL_LINES, 0, cont_v_tmp.size());
+        }
+
+        {
+            glUniform1i(surface_loc, 1);
+            glEnableVertexAttribArray(1);
+            glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[1]);
+            glBufferData(GL_ARRAY_BUFFER, Bez_v_tmp.size() * sizeof(GLfloat), Bez_v_tmp.data(), GL_STATIC_DRAW);
+            glDrawArrays(GL_LINES, 0, Bez_v_tmp.size());
         }
 
 
@@ -632,6 +638,39 @@ void framebufferSizeCallback(GLFWwindow* window, int width, int height)
     g_gl_width = width;
     aspect = (float)width / (float)height;
     Sx = inverse_range / aspect;
-    proj_mat[0] = Sx;
-    glUniformMatrix4fv(proj_mat_location, 1, GL_FALSE, proj_mat);
+    proj_mat.m[0] = Sx;
+    glUniformMatrix4fv(proj_mat_location, 1, GL_FALSE, proj_mat.m);
+}
+
+void mousebuttonCallback(GLFWwindow* window, int button, int action, int mods)
+{
+    ImGuiIO& io = ImGui::GetIO();
+
+    io.AddMouseButtonEvent(button, action == GLFW_PRESS);
+
+    if (!io.WantCaptureMouse)
+    {
+        if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+        {
+            double xpos, ypos;
+            //getting cursor position
+            glfwGetCursorPos(window, &xpos, &ypos);
+            std::cout << "Cursor Position at (" << xpos << " : " << ypos << ")" << std::endl;
+
+            //auto mat = view_mat * inverse(proj_mat);
+            //auto dir = transpose(mat) * vec4(g_gl_width,g_gl_height, 0.5, 1);
+
+            //auto cam_p = vec4(cam_pos[0], cam_pos[1], cam_pos[2], 0.0);
+            //for (int i = 0; i < 4; i++)
+            //{
+            //    //
+            //    dir.v[i] /= mat.m[12] + mat.m[13] + mat.m[14] + mat.m[15];
+            //    dir.v[i] -= cam_p.v[i];
+            //}
+
+            //printf("%lf, %lf, %lf, %lf\n", dir.v[0], dir.v[1], dir.v[2], dir.v[3]);
+
+            //dir.v /= mat.m[12] + mat.m[13] + mat.m[14] + mat.m[15]
+        }
+    }
 }
