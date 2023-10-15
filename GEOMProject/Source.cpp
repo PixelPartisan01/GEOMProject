@@ -95,9 +95,11 @@ GLfloat cam_speed = 1.0f;
 GLfloat cam_yaw_speed = 10.0f;
 GLfloat cam_pos[]{ (GLfloat)(slider_N-1)/2.0f, (GLfloat)(slider_M-1)/2.0f, 5.0f };
 GLfloat cam_yaw = 0.0f;
-GLfloat myrotate = 0.0f;
+GLfloat rotateY = 0.0f;
+GLfloat rotateX = 0.0f;
 GLfloat cam_pitch = 0.0f;
 GLboolean cam_moved = false;
+GLboolean rotate_moved = false;
 GLint d = 1;
 GLdouble pos = 0.0;
 GLdouble DT = 0.0;
@@ -173,14 +175,15 @@ void keyCallBack()
         cam_pos[1] += cam_speed * DT;
         cam_moved = true;
     }
-    if (glfwGetKey(g_window, GLFW_KEY_T))
+    if (glfwGetKey(g_window, GLFW_KEY_LEFT))
     {
-        myrotate = myrotate + 1.0f;
-        //Debug
-        
-        //printf("campos:");
-        //print(vec3(-cam_pos[0], -cam_pos[1], -cam_pos[2]));
-        cam_moved = true;
+        rotateY = rotateY + 1.0f;
+        rotate_moved = true;
+    }
+    if (glfwGetKey(g_window, GLFW_KEY_RIGHT))
+    {
+        rotateY = rotateY - 1.0f;
+        rotate_moved = true;
     }
 }
 
@@ -535,18 +538,20 @@ void mainRenderLoop()
             mat4 T = translate(identity_mat4(), vec3(-cam_pos[0], -cam_pos[1], -cam_pos[2]));
             mat4 R = rotate_y_deg(identity_mat4(), -cam_yaw);
 
-            mat4 R2 = rotate_y_deg(identity_mat4(), myrotate);
+            mat4 view_mat = R * T;
+            glUniformMatrix4fv(view_mat_location, 1, GL_FALSE, view_mat.m);
+        }
+
+        if (rotate_moved) 
+        {
+            mat4 RY = rotate_y_deg(identity_mat4(), rotateY);
             mat4 Tto = translate(identity_mat4(), vec3(2.0f, 2.0f, 2.0f));
             mat4 Tback = translate(identity_mat4(), vec3(-2.0f, -2.0f, -2.0f));
-            //mat4 T = translate(identity_mat4(), vec3(0.5f, 0.5f, 0.5f));
-            //mat4 T2 = translate(identity_mat4(), vec3(0, 0, 0));
-            mat4 view_mat = R * T;
+
             mat4 model_mat = rotate_y_deg(identity_mat4(), ONE_DEG_IN_RAD * 100);
-            model_mat = model_mat * Tto * R2 * Tback;
-            printf("---");
-            print(view_mat);
-            printf("---");
-            glUniformMatrix4fv(view_mat_location, 1, GL_FALSE, view_mat.m);
+
+            model_mat = model_mat * Tto * RY * Tback;
+
             glUniformMatrix4fv(model_mat_location, 1, GL_FALSE, model_mat.m);
         }
 
