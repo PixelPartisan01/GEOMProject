@@ -4,6 +4,7 @@
 #include    <string>
 #include    <windows.h>
 #include	<GL/glew.h>
+#include    <GL/GLU.h>
 #define		GLFW_DLL
 #include	<GLFW/glfw3.h>
 #include    "gl_utils.h"
@@ -18,6 +19,7 @@
 #include    "imGui/imgui.h"
 #include    "imGui/imgui_impl_glfw.h"
 #include    "imGui/imgui_impl_opengl3.h"
+#pragma comment(lib, "glu32.lib")
 
 #define VBO 3
 #define VAO 1
@@ -164,22 +166,22 @@ void keyCallBack()
     }
     if (glfwGetKey(g_window, GLFW_KEY_W))
     {
-        cam_pos[1] += cam_speed * DT;
+        cam_pos[2] -= cam_speed * DT;
         cam_moved = true;
     }
     if (glfwGetKey(g_window, GLFW_KEY_S))
     {
-        cam_pos[1] -= cam_speed * DT;
+        cam_pos[2] += cam_speed * DT;;
         cam_moved = true;
     }
     if (glfwGetKey(g_window, GLFW_KEY_Q))
     {
-        cam_pos[2] += cam_speed * DT;
+        cam_pos[1] += cam_speed * DT;
         cam_moved = true;
     }
     if (glfwGetKey(g_window, GLFW_KEY_E))
     {
-        cam_pos[2] -= cam_speed * DT;
+        cam_pos[1] -= cam_speed * DT;
         cam_moved = true;
     }
     if (glfwGetKey(g_window, GLFW_KEY_LEFT))
@@ -685,20 +687,33 @@ void mousebuttonCallback(GLFWwindow* window, int button, int action, int mods)
             glfwGetCursorPos(window, &xpos, &ypos);
             std::cout << "Cursor Position at (" << xpos << " : " << ypos << ")" << std::endl;
 
-            //auto mat = view_mat * inverse(proj_mat);
-            //auto dir = transpose(mat) * vec4(g_gl_width,g_gl_height, 0.5, 1);
+            GLdouble m[16];
+            GLdouble p[16];
+            GLint    v[4];
 
-            //auto cam_p = vec4(cam_pos[0], cam_pos[1], cam_pos[2], 0.0);
-            //for (int i = 0; i < 4; i++)
-            //{
-            //    //
-            //    dir.v[i] /= mat.m[12] + mat.m[13] + mat.m[14] + mat.m[15];
-            //    dir.v[i] -= cam_p.v[i];
-            //}
+            GLdouble objX;
+            GLdouble objY;
+            GLdouble objZ;
 
-            //printf("%lf, %lf, %lf, %lf\n", dir.v[0], dir.v[1], dir.v[2], dir.v[3]);
+            GLdouble z;
+            glReadPixels(xpos, ypos, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &z);
 
-            //dir.v /= mat.m[12] + mat.m[13] + mat.m[14] + mat.m[15]
+
+            glGetIntegerv(GL_VIEWPORT, v);
+
+            for (int i = 0; i < 16; i++)
+            {
+                m[i] = model_mat.m[i];
+            }
+            
+            for (int i = 0; i < 16; i++)
+            {
+                p[i] = proj_mat.m[i];
+            }
+
+            gluUnProject(xpos, ypos, z, m, p, v, &objX, &objY, &objZ);
+
+            printf("%lf %lf, %lf\n", objX, objY, objZ);
         }
     }
 }
