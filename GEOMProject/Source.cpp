@@ -4,6 +4,7 @@
 #include    <string>
 #include    <windows.h>
 #include	<GL/glew.h>
+#include    <GL/GLU.h>
 #define		GLFW_DLL
 #include	<GLFW/glfw3.h>
 #include    "gl_utils.h"
@@ -18,6 +19,7 @@
 #include    "imGui/imgui.h"
 #include    "imGui/imgui_impl_glfw.h"
 #include    "imGui/imgui_impl_opengl3.h"
+#pragma comment(lib, "glu32.lib")
 
 #define VBO 3
 #define VAO 1
@@ -101,8 +103,11 @@ GLfloat cam_speed = 1.0f;
 GLfloat cam_yaw_speed = 10.0f;
 GLfloat cam_pos[]{ (GLfloat)(slider_N-1)/2.0f, (GLfloat)(slider_M-1)/2.0f, 5.0f };
 GLfloat cam_yaw = 0.0f;
+GLfloat rotateY = 0.0f;
+GLfloat rotateX = 0.0f;
 GLfloat cam_pitch = 0.0f;
 GLboolean cam_moved = false;
+GLboolean rotate_moved = false;
 GLint d = 1;
 GLdouble pos = 0.0;
 GLdouble DT = 0.0;
@@ -161,23 +166,33 @@ void keyCallBack()
     }
     if (glfwGetKey(g_window, GLFW_KEY_W))
     {
-        cam_pos[1] += cam_speed * DT;
+        cam_pos[2] -= cam_speed * DT;
         cam_moved = true;
     }
     if (glfwGetKey(g_window, GLFW_KEY_S))
     {
-        cam_pos[1] -= cam_speed * DT;
+        cam_pos[2] += cam_speed * DT;;
         cam_moved = true;
     }
     if (glfwGetKey(g_window, GLFW_KEY_Q))
     {
-        cam_pos[2] += cam_speed * DT;
+        cam_pos[1] += cam_speed * DT;
         cam_moved = true;
     }
     if (glfwGetKey(g_window, GLFW_KEY_E))
     {
-        cam_pos[2] -= cam_speed * DT;
+        cam_pos[1] -= cam_speed * DT;
         cam_moved = true;
+    }
+    if (glfwGetKey(g_window, GLFW_KEY_LEFT))
+    {
+        rotateY = rotateY + 1.0f;
+        rotate_moved = true;
+    }
+    if (glfwGetKey(g_window, GLFW_KEY_RIGHT))
+    {
+        rotateY = rotateY - 1.0f;
+        rotate_moved = true;
     }
 }
 
@@ -236,7 +251,7 @@ void genGrid(GLint N, GLint M)
             }
 
             controll_vertices.push_back({ i,j,r });
-            //printf("[%lf; %lf; %lf]\n", i, j, r);
+            printf("[%lf; %lf; %lf]\n", i, j, r);
         }
     }
 
@@ -571,8 +586,22 @@ void mainRenderLoop()
         {
             mat4 T = translate(identity_mat4(), vec3(-cam_pos[0], -cam_pos[1], -cam_pos[2]));
             mat4 R = rotate_y_deg(identity_mat4(), -cam_yaw);
+
             mat4 view_mat = R * T;
             glUniformMatrix4fv(view_mat_location, 1, GL_FALSE, view_mat.m);
+        }
+
+        if (rotate_moved) 
+        {
+            mat4 RY = rotate_y_deg(identity_mat4(), rotateY);
+            mat4 Tto = translate(identity_mat4(), vec3(2.0f, 2.0f, 2.0f));
+            mat4 Tback = translate(identity_mat4(), vec3(-2.0f, -2.0f, -2.0f));
+
+            mat4 model_mat = rotate_y_deg(identity_mat4(), ONE_DEG_IN_RAD * 100);
+
+            model_mat = model_mat * Tto * RY * Tback;
+
+            glUniformMatrix4fv(model_mat_location, 1, GL_FALSE, model_mat.m);
         }
 
         glPointSize(10.0);
@@ -658,20 +687,33 @@ void mousebuttonCallback(GLFWwindow* window, int button, int action, int mods)
             glfwGetCursorPos(window, &xpos, &ypos);
             std::cout << "Cursor Position at (" << xpos << " : " << ypos << ")" << std::endl;
 
-            //auto mat = view_mat * inverse(proj_mat);
-            //auto dir = transpose(mat) * vec4(g_gl_width,g_gl_height, 0.5, 1);
+            GLdouble m[16];
+            GLdouble p[16];
+            GLint    v[4];
 
-            //auto cam_p = vec4(cam_pos[0], cam_pos[1], cam_pos[2], 0.0);
-            //for (int i = 0; i < 4; i++)
-            //{
-            //    //
-            //    dir.v[i] /= mat.m[12] + mat.m[13] + mat.m[14] + mat.m[15];
-            //    dir.v[i] -= cam_p.v[i];
-            //}
+            GLdouble objX;
+            GLdouble objY;
+            GLdouble objZ;
 
-            //printf("%lf, %lf, %lf, %lf\n", dir.v[0], dir.v[1], dir.v[2], dir.v[3]);
+            GLdouble z;
+            glReadPixels(xpos, ypos, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &z);
 
-            //dir.v /= mat.m[12] + mat.m[13] + mat.m[14] + mat.m[15]
+
+            glGetIntegerv(GL_VIEWPORT, v);
+
+            for (int i = 0; i < 16; i++)
+            {
+                m[i] = model_mat.m[i];
+            }
+            
+            for (int i = 0; i < 16; i++)
+            {
+                p[i] = proj_mat.m[i];
+            }
+
+            gluUnProject(xpos, ypos, z, m, p, v, &objX, &objY, &objZ);
+
+            printf("%lf %lf, %lf\n", objX, objY, objZ);
         }
     }
 }
