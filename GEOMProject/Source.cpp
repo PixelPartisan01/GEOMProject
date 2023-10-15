@@ -561,6 +561,7 @@ void mainRenderLoop()
 
            //Bez_v_tmp.push_back(0.0f);
         }
+        
 
         DT = deltaTime();
 
