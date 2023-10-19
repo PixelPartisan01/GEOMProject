@@ -483,6 +483,10 @@ std::vector<GLfloat> genWireframe()
 bool credits = false;
 bool show_window = true;
 
+float selectedPointX = 0;
+float selectedPointY = 0;
+float selectedPointZ = 0;
+
 void mainRenderLoop()
 {
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -523,6 +527,19 @@ void mainRenderLoop()
             ImGui::CaptureKeyboardFromApp(false);
             ImGui::SliderFloat("U", &slider_U, 0.1, 0.01);
             ImGui::SliderFloat("V", &slider_V, 0.1, 0.01);
+
+            ImGui::InputFloat("Kiv. pont X poz:", &selectedPointX);
+            ImGui::InputFloat("Kiv. pont Y poz:", &selectedPointY);
+            ImGui::InputFloat("Kiv. pont Z poz:", &selectedPointZ);
+
+            // Button to trigger action
+            if (ImGui::Button("Rendben")) {
+                // Handle button click event
+                std::cout << "X Value entered: " << selectedPointX << std::endl;
+                std::cout << "Y Value entered: " << selectedPointY << std::endl;
+                std::cout << "Z Value entered: " << selectedPointZ << std::endl;
+            }
+
 
             ImGui::End();
         }
