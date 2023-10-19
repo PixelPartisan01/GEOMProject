@@ -194,6 +194,16 @@ void keyCallBack()
         rotateY = rotateY - 1.0f;
         rotate_moved = true;
     }
+    if (glfwGetKey(g_window, GLFW_KEY_UP))
+    {
+        rotateX+= 1.0f;
+        rotate_moved = true;
+    }
+    if (glfwGetKey(g_window, GLFW_KEY_DOWN))
+    {
+        rotateX -= 1.0f;
+        rotate_moved = true;
+    }
 }
 
 GLfloat factorial(int n)
@@ -591,19 +601,19 @@ void mainRenderLoop()
             glUniformMatrix4fv(view_mat_location, 1, GL_FALSE, view_mat.m);
         }
 
-        if (rotate_moved) 
+        if (rotate_moved)
         {
             mat4 RY = rotate_y_deg(identity_mat4(), rotateY);
+            mat4 RX = rotate_x_deg(identity_mat4(), rotateX);
             mat4 Tto = translate(identity_mat4(), vec3(2.0f, 2.0f, 2.0f));
             mat4 Tback = translate(identity_mat4(), vec3(-2.0f, -2.0f, -2.0f));
 
-            mat4 model_mat = rotate_y_deg(identity_mat4(), ONE_DEG_IN_RAD * 100);
-
-            model_mat = model_mat * Tto * RY * Tback;
+            mat4 model_mat = identity_mat4(); // Initialize with identity matrix
+            model_mat = model_mat * Tto *  RY * RX * Tback; // Combine transformations
 
             glUniformMatrix4fv(model_mat_location, 1, GL_FALSE, model_mat.m);
         }
-
+        
         glPointSize(10.0);
 
         /*TODO: Fix This*/  

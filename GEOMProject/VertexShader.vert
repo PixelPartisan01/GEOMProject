@@ -18,7 +18,7 @@ void main()
 	else if (surface == 1)
 	{
 		gl_Position = proj * view * model * vert * vec4(position_Bez, 1.0);
-		vertexColor = vec3(1.0f, 1.0f, 0.0f);
+		vertexColor = vec3(1.0f, 0.0f, 1.0f);
 	}
 		else if (surface == 2)
 	{
