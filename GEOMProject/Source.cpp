@@ -21,7 +21,7 @@
 #include    "imGui/imgui_impl_opengl3.h"
 #pragma comment(lib, "glu32.lib")
 
-#define VBO 3
+#define VBO 4
 #define VAO 1
 
 extern "C"
@@ -36,6 +36,7 @@ void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 void mousebuttonCallback(GLFWwindow* window, int button, int action, int mods);
 void genBezier(int N, int M);
 void genGrid(GLint N, GLint M);
+void genSurface();
 GLdouble deltaTime();
 
 #define WINDOW_HEIGHT   720
@@ -72,6 +73,7 @@ std::vector<GLfloat> xBezier;
 std::vector<GLfloat> yBezier;
 std::vector<GLfloat> zBezier;
 std::vector<std::vector<GLfloat>> Bezier;
+std::vector<GLfloat> sur_Bezier;
 
 bool    wireframe       = true;
 bool    surface         = false;
@@ -264,6 +266,7 @@ GLfloat B(GLint n_m, GLint i_j, GLfloat u_v)
 }
 
 int num_V;
+int num_U;
 
 void genBezier(GLint N, GLint M)
 {
@@ -271,10 +274,12 @@ void genBezier(GLint N, GLint M)
     xBezier.clear();
     yBezier.clear();
     zBezier.clear();
+    num_U = 0;
 
 
     for (GLfloat u = 0.0f; u <= 1.0f; u += slider_U)
     {
+        num_U++;
         num_V = 0;
         for (GLfloat v = 0.0f; v <= 1.0f; v += slider_V)
         {
@@ -298,6 +303,7 @@ void genBezier(GLint N, GLint M)
     }
 
     //printf("\n\nBezier-felület pontjai:\n\n");
+    genSurface();
     //for (auto v : Bezier)
     //{
 
@@ -359,6 +365,9 @@ int init()
     glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[2]);
     glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, NULL);
 
+    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[3]);
+    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+
     parse_file_into_str("VertexShader.vert", vertex_shader, 1024 * 256);
     parse_file_into_str("FragmentShader.frag", fragment_shader, 1024 * 256);
 
@@ -406,8 +415,6 @@ int init()
         return -4;
     }
 
-
-
     //GLint u_time_loc = glGetUniformLocation(shader_program_object, "u_time_s");
 
     view_mat_location = glGetUniformLocation(shader_program_object, "view");
@@ -427,6 +434,50 @@ int init()
     glfwSetMouseButtonCallback(g_window, mousebuttonCallback);
 
     return 0;
+}
+
+void genSurface()
+{
+    //std::vector<GLfloat> sur_Bezier;
+
+    int br = 1;
+
+    sur_Bezier.clear();
+
+    for (int i = 0; i < Bezier.size() - num_V; i++)
+    {
+        if (br == num_V)
+        {
+            br = 1;
+            continue;
+        }
+
+        sur_Bezier.push_back(Bezier[i][0]);
+        sur_Bezier.push_back(Bezier[i][1]);
+        sur_Bezier.push_back(Bezier[i][2]);
+
+        sur_Bezier.push_back(Bezier[i + 1][0]);
+        sur_Bezier.push_back(Bezier[i + 1][1]);
+        sur_Bezier.push_back(Bezier[i + 1][2]);
+
+        sur_Bezier.push_back(Bezier[i + num_V][0]);
+        sur_Bezier.push_back(Bezier[i + num_V][1]);
+        sur_Bezier.push_back(Bezier[i + num_V][2]);
+
+        sur_Bezier.push_back(Bezier[i + 1][0]);
+        sur_Bezier.push_back(Bezier[i + 1][1]);
+        sur_Bezier.push_back(Bezier[i + 1][2]);
+
+        sur_Bezier.push_back(Bezier[i + num_V + 1][0]);
+        sur_Bezier.push_back(Bezier[i + num_V + 1][1]);
+        sur_Bezier.push_back(Bezier[i + num_V + 1][2]);
+
+        sur_Bezier.push_back(Bezier[i + num_V][0]);
+        sur_Bezier.push_back(Bezier[i + num_V][1]);
+        sur_Bezier.push_back(Bezier[i + num_V][2]);
+
+        br++;
+    }
 }
 
 /*TODO*/
@@ -479,7 +530,7 @@ void mainRenderLoop()
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_MULTISAMPLE);
-
+    glMatrixMode(GL_MODELVIEW | GL_PROJECTION);
 
     GLint surface_loc = glGetUniformLocation(shader_program_object, "surface");
 
@@ -506,6 +557,8 @@ void mainRenderLoop()
 
             ImGui::Checkbox("Controll Mesh", &cont_mesh);
             ImGui::Checkbox("Controll Points", &cont_points);
+            ImGui::Checkbox("Wireframe", &wireframe);
+            ImGui::Checkbox("Surface", &surface);
 
             ImGui::SliderInt("N", &slider_N, 4, 10);
             ImGui::SliderInt("M", &slider_M, 4, 10);
@@ -633,12 +686,22 @@ void mainRenderLoop()
             glDrawArrays(GL_LINES, 0, cont_v_tmp.size());
         }
 
+        if (wireframe)
         {
             glUniform1i(surface_loc, 1);
             glEnableVertexAttribArray(1);
             glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[1]);
             glBufferData(GL_ARRAY_BUFFER, Bez_v_tmp.size() * sizeof(GLfloat), Bez_v_tmp.data(), GL_STATIC_DRAW);
             glDrawArrays(GL_LINES, 0, Bez_v_tmp.size());
+        }
+
+        if (surface)
+        {
+            glUniform1i(surface_loc, 3);
+            glEnableVertexAttribArray(3);
+            glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[3]);
+            glBufferData(GL_ARRAY_BUFFER, sur_Bezier.size() * sizeof(GLfloat), sur_Bezier.data(), GL_STATIC_DRAW);
+            glDrawArrays(GL_TRIANGLES, 0, sur_Bezier.size());
         }
 
 
@@ -687,20 +750,30 @@ void mousebuttonCallback(GLFWwindow* window, int button, int action, int mods)
             glfwGetCursorPos(window, &xpos, &ypos);
             std::cout << "Cursor Position at (" << xpos << " : " << ypos << ")" << std::endl;
 
-            GLdouble m[16];
-            GLdouble p[16];
-            GLint    v[4];
+            GLdouble  m[16];
+            GLdouble  p[16];
+            GLint     v[4];
+            mat4 t;
+
+            vec3 tv;
+
+           
 
             GLdouble objX;
             GLdouble objY;
-            GLdouble objZ;
-
-            GLdouble z;
-            glReadPixels(xpos, ypos, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &z);
-
+            GLdouble objZ;           
 
             glGetIntegerv(GL_VIEWPORT, v);
+            //glGetDoublev(GL_MODELVIEW_MATRIX, m);
+            //glGetDoublev(GL_PROJECTION_MATRIX, p);
 
+            GLfloat winX = (float)xpos;
+            GLfloat winY = (float)v[3] - (float)ypos;
+            GLfloat winZ;
+
+            glReadPixels(xpos, (int)winY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &winZ);
+
+            
             for (int i = 0; i < 16; i++)
             {
                 m[i] = model_mat.m[i];
@@ -711,7 +784,7 @@ void mousebuttonCallback(GLFWwindow* window, int button, int action, int mods)
                 p[i] = proj_mat.m[i];
             }
 
-            gluUnProject(xpos, ypos, z, m, p, v, &objX, &objY, &objZ);
+            gluUnProject(xpos, ypos, winZ, m, p, v, &objX, &objY, &objZ);
 
             printf("%lf %lf, %lf\n", objX, objY, objZ);
         }
