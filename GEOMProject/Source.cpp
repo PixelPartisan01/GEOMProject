@@ -21,7 +21,7 @@
 #include    "imGui/imgui_impl_opengl3.h"
 #pragma comment(lib, "glu32.lib")
 
-#define VBO 4
+#define VBO 6
 #define VAO 2
 
 extern "C"
@@ -122,10 +122,14 @@ mat4 model_mat = rotate_y_deg(identity_mat4(), ONE_DEG_IN_RAD * 100);
 mat4 vert_mat = translate(identity_mat4(), vec3(0.0, 0.0, 0.0));
 mat4 vert_mat_fl = translate(identity_mat4(), vec3(0.0, -2.0, 0.0));
 
+std::vector<GLfloat> light_pos;
+
 GLint view_mat_location = 0;
 GLint proj_mat_location = 0;
 GLint model_mat_location = 0;
 GLint vert_mat_location = 0;
+GLint norm_Bezier_location = 0;
+GLint light_pos_location = 0;
 
 int rot = 0;
 
@@ -361,6 +365,10 @@ int init()
     ImGui_ImplGlfw_InitForOpenGL(g_window, true);
     ImGui_ImplOpenGL3_Init("#version 460");
 
+    light_pos.push_back(1.0f);
+    light_pos.push_back(3.0f);
+    light_pos.push_back(5.0f);
+
     glGenBuffers(VBO, vertex_buffer_object);
     
     glGenVertexArrays(VAO, vertex_array_object);
@@ -378,6 +386,12 @@ int init()
 
     glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[3]);
     glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[4]);
+    glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[5]);
+    glVertexAttribPointer(5, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
     parse_file_into_str("VertexShader.vert", vertex_shader, 1024 * 256);
     parse_file_into_str("FragmentShader.frag", fragment_shader, 1024 * 256);
@@ -433,6 +447,8 @@ int init()
     model_mat_location = glGetUniformLocation(shader_program_object, "model");
     vert_mat_location = glGetUniformLocation(shader_program_object, "vert");
     GLint vert_mat_fl_location = glGetUniformLocation(shader_program_object, "vert_fl");
+    norm_Bezier_location = glGetUniformLocation(shader_program_object, "surfaceNormal");
+    light_pos_location = glGetUniformLocation(shader_program_object, "light_pos");
 
     glUseProgram(shader_program_object);
     glUniformMatrix4fv(view_mat_location, 1, GL_FALSE, view_mat.m);
@@ -586,6 +602,7 @@ void mainRenderLoop()
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glViewport(0, 0, g_gl_width, g_gl_height);
+        glShadeModel(GL_FLAT);
 
         glfwPollEvents();
 
@@ -593,6 +610,7 @@ void mainRenderLoop()
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
+        /*Menu Window*/
         {
             ImGui::Begin("Menu");
 
@@ -611,9 +629,14 @@ void mainRenderLoop()
             ImGui::SliderFloat("U", &slider_U, 0.1, 0.01);
             ImGui::SliderFloat("V", &slider_V, 0.1, 0.01);
 
-            ImGui::InputFloat("Kiv. pont X poz:", &selectedPointX);
-            ImGui::InputFloat("Kiv. pont Y poz:", &selectedPointY);
-            ImGui::InputFloat("Kiv. pont Z poz:", &selectedPointZ);
+            ImGui::SliderFloat("Light X", &light_pos[0], 1, 10);
+            ImGui::SliderFloat("Light Y", &light_pos[1], 1, 10);
+            ImGui::SliderFloat("Light Z", &light_pos[2], 1, 10);
+
+            /*Külön ablakban, a pont kiválasztása után*/
+            //ImGui::InputFloat("Kiv. pont X poz:", &selectedPointX);
+            //ImGui::InputFloat("Kiv. pont Y poz:", &selectedPointY);
+            //ImGui::InputFloat("Kiv. pont Z poz:", &selectedPointZ);
 
             // Button to trigger action
             if (ImGui::Button("Rendben")) {
@@ -759,6 +782,14 @@ void mainRenderLoop()
             glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[3]);
             glBufferData(GL_ARRAY_BUFFER, sur_Bezier.size() * sizeof(GLfloat), sur_Bezier.data(), GL_STATIC_DRAW);
             glDrawArrays(GL_TRIANGLES, 0, sur_Bezier.size());
+
+            glEnableVertexAttribArray(4);
+            glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[4]);
+            glBufferData(GL_ARRAY_BUFFER, norm_Bezier.size() * sizeof(GLfloat), norm_Bezier.data(), GL_DYNAMIC_READ);
+
+            glEnableVertexAttribArray(5);
+            glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[5]);
+            glBufferData(GL_ARRAY_BUFFER, light_pos.size() * sizeof(GLfloat), light_pos.data(), GL_DYNAMIC_READ);
         }
 
 
