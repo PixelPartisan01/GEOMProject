@@ -22,7 +22,7 @@
 #pragma comment(lib, "glu32.lib")
 
 #define VBO 4
-#define VAO 1
+#define VAO 2
 
 extern "C"
 {
@@ -74,8 +74,9 @@ std::vector<GLfloat> yBezier;
 std::vector<GLfloat> zBezier;
 std::vector<std::vector<GLfloat>> Bezier;
 std::vector<GLfloat> sur_Bezier;
+std::vector<GLfloat> norm_Bezier;
 
-bool    wireframe       = true;
+int    wireframe       = 0;
 bool    surface         = false;
 bool    cont_mesh       = true;
 bool    cont_points     = true;
@@ -366,7 +367,7 @@ int init()
     glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, NULL);
 
     glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[3]);
-    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
     parse_file_into_str("VertexShader.vert", vertex_shader, 1024 * 256);
     parse_file_into_str("FragmentShader.frag", fragment_shader, 1024 * 256);
@@ -452,29 +453,55 @@ void genSurface()
             continue;
         }
 
-        sur_Bezier.push_back(Bezier[i][0]);
-        sur_Bezier.push_back(Bezier[i][1]);
-        sur_Bezier.push_back(Bezier[i][2]);
+        vec3 A = vec3(Bezier[i][0], Bezier[i][1], Bezier[i][2]);
+        vec3 B = vec3(Bezier[i + 1][0], Bezier[i + 1][1], Bezier[i + 1][2]);
+        vec3 C = vec3(Bezier[i + num_V][0], Bezier[i + num_V][1], Bezier[i + num_V][2]);
 
-        sur_Bezier.push_back(Bezier[i + 1][0]);
-        sur_Bezier.push_back(Bezier[i + 1][1]);
-        sur_Bezier.push_back(Bezier[i + 1][2]);
+        sur_Bezier.push_back((GLfloat)A.v[0]);
+        sur_Bezier.push_back((GLfloat)A.v[1]);
+        sur_Bezier.push_back((GLfloat)A.v[2]);
 
-        sur_Bezier.push_back(Bezier[i + num_V][0]);
-        sur_Bezier.push_back(Bezier[i + num_V][1]);
-        sur_Bezier.push_back(Bezier[i + num_V][2]);
+        sur_Bezier.push_back((GLfloat)B.v[0]);
+        sur_Bezier.push_back((GLfloat)B.v[1]);
+        sur_Bezier.push_back((GLfloat)B.v[2]);
 
-        sur_Bezier.push_back(Bezier[i + 1][0]);
-        sur_Bezier.push_back(Bezier[i + 1][1]);
-        sur_Bezier.push_back(Bezier[i + 1][2]);
+        sur_Bezier.push_back((GLfloat)C.v[0]);
+        sur_Bezier.push_back((GLfloat)C.v[1]);
+        sur_Bezier.push_back((GLfloat)C.v[2]);
 
-        sur_Bezier.push_back(Bezier[i + num_V + 1][0]);
-        sur_Bezier.push_back(Bezier[i + num_V + 1][1]);
-        sur_Bezier.push_back(Bezier[i + num_V + 1][2]);
+        vec3 AB = B - A;
+        vec3 AC = C - A;
 
-        sur_Bezier.push_back(Bezier[i + num_V][0]);
-        sur_Bezier.push_back(Bezier[i + num_V][1]);
-        sur_Bezier.push_back(Bezier[i + num_V][2]);
+        vec3 c = cross(AB, AC);
+
+        norm_Bezier.push_back((GLfloat)c.v[0]);
+        norm_Bezier.push_back((GLfloat)c.v[1]);
+        norm_Bezier.push_back((GLfloat)c.v[2]);
+
+        A = vec3(Bezier[i + 1][0], Bezier[i + 1][1], Bezier[i + 1][2]);
+        B = vec3(Bezier[i + num_V + 1][0], Bezier[i + num_V + 1][1], Bezier[i + num_V + 1][2]);
+        C = vec3(Bezier[i + num_V][0], Bezier[i + num_V][1], Bezier[i + num_V][2]);
+
+        sur_Bezier.push_back((GLfloat)A.v[0]);
+        sur_Bezier.push_back((GLfloat)A.v[1]);
+        sur_Bezier.push_back((GLfloat)A.v[2]);
+
+        sur_Bezier.push_back((GLfloat)B.v[0]);
+        sur_Bezier.push_back((GLfloat)B.v[1]);
+        sur_Bezier.push_back((GLfloat)B.v[2]);
+
+        sur_Bezier.push_back((GLfloat)C.v[0]);
+        sur_Bezier.push_back((GLfloat)C.v[1]);
+        sur_Bezier.push_back((GLfloat)C.v[2]);
+
+        AB = B - A;
+        AC = C - A;
+
+        c = cross(AB, AC);
+
+        norm_Bezier.push_back((GLfloat)c.v[0]);
+        norm_Bezier.push_back((GLfloat)c.v[1]);
+        norm_Bezier.push_back((GLfloat)c.v[2]);
 
         br++;
     }
@@ -557,8 +584,11 @@ void mainRenderLoop()
 
             ImGui::Checkbox("Controll Mesh", &cont_mesh);
             ImGui::Checkbox("Controll Points", &cont_points);
-            ImGui::Checkbox("Wireframe", &wireframe);
-            ImGui::Checkbox("Surface", &surface);
+
+            ImGui::RadioButton("Wireframe", &wireframe, 0);
+            ImGui::RadioButton("Surface", &wireframe, 1);
+            //ImGui::Checkbox("Wireframe", &wireframe);
+            //ImGui::Checkbox("Surface", &surface);
 
             ImGui::SliderInt("N", &slider_N, 4, 10);
             ImGui::SliderInt("M", &slider_M, 4, 10);
@@ -686,7 +716,7 @@ void mainRenderLoop()
             glDrawArrays(GL_LINES, 0, cont_v_tmp.size());
         }
 
-        if (wireframe)
+        if (wireframe == 0)
         {
             glUniform1i(surface_loc, 1);
             glEnableVertexAttribArray(1);
@@ -695,7 +725,7 @@ void mainRenderLoop()
             glDrawArrays(GL_LINES, 0, Bez_v_tmp.size());
         }
 
-        if (surface)
+        if (wireframe == 1)
         {
             glUniform1i(surface_loc, 3);
             glEnableVertexAttribArray(3);
