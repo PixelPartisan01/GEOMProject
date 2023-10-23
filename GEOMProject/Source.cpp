@@ -197,6 +197,16 @@ void keyCallBack()
         rotateY = rotateY - 1.0f;
         rotate_moved = true;
     }
+    if (glfwGetKey(g_window, GLFW_KEY_UP))
+    {
+        rotateX+= 1.0f;
+        rotate_moved = true;
+    }
+    if (glfwGetKey(g_window, GLFW_KEY_DOWN))
+    {
+        rotateX -= 1.0f;
+        rotate_moved = true;
+    }
 }
 
 GLfloat factorial(int n)
@@ -551,6 +561,10 @@ std::vector<GLfloat> genWireframe()
 bool credits = false;
 bool show_window = true;
 
+float selectedPointX = 0;
+float selectedPointY = 0;
+float selectedPointZ = 0;
+
 void mainRenderLoop()
 {
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -596,6 +610,19 @@ void mainRenderLoop()
             ImGui::CaptureKeyboardFromApp(false);
             ImGui::SliderFloat("U", &slider_U, 0.1, 0.01);
             ImGui::SliderFloat("V", &slider_V, 0.1, 0.01);
+
+            ImGui::InputFloat("Kiv. pont X poz:", &selectedPointX);
+            ImGui::InputFloat("Kiv. pont Y poz:", &selectedPointY);
+            ImGui::InputFloat("Kiv. pont Z poz:", &selectedPointZ);
+
+            // Button to trigger action
+            if (ImGui::Button("Rendben")) {
+                // Handle button click event
+                std::cout << "X Value entered: " << selectedPointX << std::endl;
+                std::cout << "Y Value entered: " << selectedPointY << std::endl;
+                std::cout << "Z Value entered: " << selectedPointZ << std::endl;
+            }
+
 
             ImGui::End();
         }
@@ -674,19 +701,19 @@ void mainRenderLoop()
             glUniformMatrix4fv(view_mat_location, 1, GL_FALSE, view_mat.m);
         }
 
-        if (rotate_moved) 
+        if (rotate_moved)
         {
             mat4 RY = rotate_y_deg(identity_mat4(), rotateY);
+            mat4 RX = rotate_x_deg(identity_mat4(), rotateX);
             mat4 Tto = translate(identity_mat4(), vec3(2.0f, 2.0f, 2.0f));
             mat4 Tback = translate(identity_mat4(), vec3(-2.0f, -2.0f, -2.0f));
 
-            mat4 model_mat = rotate_y_deg(identity_mat4(), ONE_DEG_IN_RAD * 100);
-
-            model_mat = model_mat * Tto * RY * Tback;
+            mat4 model_mat = identity_mat4(); // Initialize with identity matrix
+            model_mat = model_mat * Tto *  RY * RX * Tback; // Combine transformations
 
             glUniformMatrix4fv(model_mat_location, 1, GL_FALSE, model_mat.m);
         }
-
+        
         glPointSize(10.0);
 
         /*TODO: Fix This*/  
