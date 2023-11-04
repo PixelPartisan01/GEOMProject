@@ -19,7 +19,7 @@
 #include    "imGui/imgui.h"
 #include    "imGui/imgui_impl_glfw.h"
 #include    "imGui/imgui_impl_opengl3.h"
-#pragma comment(lib, "glu32.lib")
+#pragma     comment(lib, "glu32.lib")
 
 #define VBO 6
 #define VAO 2
@@ -123,6 +123,7 @@ mat4 vert_mat = translate(identity_mat4(), vec3(0.0, 0.0, 0.0));
 mat4 vert_mat_fl = translate(identity_mat4(), vec3(0.0, -2.0, 0.0));
 
 std::vector<GLfloat> light_pos;
+mat4 invTmatrix;
 
 GLint view_mat_location = 0;
 GLint proj_mat_location = 0;
@@ -130,6 +131,7 @@ GLint model_mat_location = 0;
 GLint vert_mat_location = 0;
 GLint norm_Bezier_location = 0;
 GLint light_pos_location = 0;
+GLint invTmatrix_location = 0;
 
 int rot = 0;
 
@@ -268,7 +270,7 @@ void genGrid(GLint N, GLint M)
             }
 
             controll_vertices.push_back({ i,j,r });
-            printf("[%lf; %lf; %lf]\n", i, j, r);
+            //printf("[%lf; %lf; %lf]\n", i, j, r);
         }
     }
 
@@ -365,7 +367,7 @@ int init()
     ImGui_ImplGlfw_InitForOpenGL(g_window, true);
     ImGui_ImplOpenGL3_Init("#version 460");
 
-    light_pos.push_back(1.0f);
+    light_pos.push_back(3.0f);
     light_pos.push_back(3.0f);
     light_pos.push_back(5.0f);
 
@@ -385,13 +387,13 @@ int init()
     glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, NULL);
 
     glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[3]);
-    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 0, NULL);
 
     glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[4]);
-    glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+    glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, 0, NULL);
 
-    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[5]);
-    glVertexAttribPointer(5, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+    //glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[5]);
+    //glVertexAttribPointer(5, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
     parse_file_into_str("VertexShader.vert", vertex_shader, 1024 * 256);
     parse_file_into_str("FragmentShader.frag", fragment_shader, 1024 * 256);
@@ -447,8 +449,8 @@ int init()
     model_mat_location = glGetUniformLocation(shader_program_object, "model");
     vert_mat_location = glGetUniformLocation(shader_program_object, "vert");
     GLint vert_mat_fl_location = glGetUniformLocation(shader_program_object, "vert_fl");
-    norm_Bezier_location = glGetUniformLocation(shader_program_object, "surfaceNormal");
     light_pos_location = glGetUniformLocation(shader_program_object, "light_pos");
+    invTmatrix_location = glGetUniformLocation(shader_program_object, "invTmatrix");
 
     glUseProgram(shader_program_object);
     glUniformMatrix4fv(view_mat_location, 1, GL_FALSE, view_mat.m);
@@ -465,11 +467,10 @@ int init()
 
 void genSurface()
 {
-    //std::vector<GLfloat> sur_Bezier;
-
     int br = 1;
 
     sur_Bezier.clear();
+    norm_Bezier.clear();
 
     for (int i = 0; i < Bezier.size() - num_V; i++)
     {
@@ -500,9 +501,14 @@ void genSurface()
 
         vec3 c = cross(AB, AC);
 
-        norm_Bezier.push_back((GLfloat)c.v[0]);
-        norm_Bezier.push_back((GLfloat)c.v[1]);
-        norm_Bezier.push_back((GLfloat)c.v[2]);
+        for (int i = 0; i < 3; i++)
+        {
+            norm_Bezier.push_back((GLfloat)c.v[0]);
+            norm_Bezier.push_back((GLfloat)c.v[1]);
+            norm_Bezier.push_back((GLfloat)c.v[2]);
+        }
+
+        //printf("{%lf, %lf, %lf}\n", c.v[0], c.v[1], c.v[2]);
 
         A = vec3(Bezier[i + 1][0], Bezier[i + 1][1], Bezier[i + 1][2]);
         B = vec3(Bezier[i + num_V + 1][0], Bezier[i + num_V + 1][1], Bezier[i + num_V + 1][2]);
@@ -525,9 +531,13 @@ void genSurface()
 
         c = cross(AB, AC);
 
-        norm_Bezier.push_back((GLfloat)c.v[0]);
-        norm_Bezier.push_back((GLfloat)c.v[1]);
-        norm_Bezier.push_back((GLfloat)c.v[2]);
+        for (int i = 0; i < 3; i++)
+        {
+            norm_Bezier.push_back((GLfloat)c.v[0]);
+            norm_Bezier.push_back((GLfloat)c.v[1]);
+            norm_Bezier.push_back((GLfloat)c.v[2]);
+        }
+        //printf("{%lf, %lf, %lf}\n", c.v[0], c.v[1], c.v[2]);
 
         br++;
     }
@@ -599,6 +609,7 @@ void mainRenderLoop()
 
     while (!glfwWindowShouldClose(g_window))
     {
+        glUniform3fv(light_pos_location, 1, reinterpret_cast<GLfloat*>(light_pos.data()));
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glViewport(0, 0, g_gl_width, g_gl_height);
@@ -629,9 +640,10 @@ void mainRenderLoop()
             ImGui::SliderFloat("U", &slider_U, 0.1, 0.01);
             ImGui::SliderFloat("V", &slider_V, 0.1, 0.01);
 
-            ImGui::SliderFloat("Light X", &light_pos[0], 1, 10);
-            ImGui::SliderFloat("Light Y", &light_pos[1], 1, 10);
-            ImGui::SliderFloat("Light Z", &light_pos[2], 1, 10);
+            /*TODO*/
+            //ImGui::SliderFloat("Light X", &light_pos[0], 1, 10);
+            //ImGui::SliderFloat("Light Y", &light_pos[1], 1, 10);
+            //ImGui::SliderFloat("Light Z", &light_pos[2], 1, 10);
 
             /*Külön ablakban, a pont kiválasztása után*/
             //ImGui::InputFloat("Kiv. pont X poz:", &selectedPointX);
@@ -777,25 +789,21 @@ void mainRenderLoop()
 
         if (wireframe == 1)
         {
-            glUniform1i(surface_loc, 3);
-            glEnableVertexAttribArray(3);
-            glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[3]);
-            glBufferData(GL_ARRAY_BUFFER, sur_Bezier.size() * sizeof(GLfloat), sur_Bezier.data(), GL_STATIC_DRAW);
-            glDrawArrays(GL_TRIANGLES, 0, sur_Bezier.size());
+            glUniform1i(surface_loc, 3);         
 
             glEnableVertexAttribArray(4);
             glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[4]);
-            glBufferData(GL_ARRAY_BUFFER, norm_Bezier.size() * sizeof(GLfloat), norm_Bezier.data(), GL_DYNAMIC_READ);
+            glBufferData(GL_ARRAY_BUFFER, norm_Bezier.size() * sizeof(GLfloat), norm_Bezier.data(), GL_STATIC_DRAW);
 
-            glEnableVertexAttribArray(5);
-            glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[5]);
-            glBufferData(GL_ARRAY_BUFFER, light_pos.size() * sizeof(GLfloat), light_pos.data(), GL_DYNAMIC_READ);
+            glEnableVertexAttribArray(3);
+            glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[3]);
+            glBufferData(GL_ARRAY_BUFFER, sur_Bezier.size() * sizeof(GLfloat), sur_Bezier.data(), GL_STATIC_DRAW);
+
+            glDrawArrays(GL_TRIANGLES, 0, sur_Bezier.size());
         }
-
 
         glBindVertexArray(0);
         glUseProgram(0);
-
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -874,7 +882,7 @@ void mousebuttonCallback(GLFWwindow* window, int button, int action, int mods)
 
             gluUnProject(xpos, ypos, winZ, m, p, v, &objX, &objY, &objZ);
 
-            printf("%lf %lf, %lf\n", objX, objY, objZ);
+            //printf("%lf %lf, %lf\n", objX, objY, objZ);
         }
     }
 }
