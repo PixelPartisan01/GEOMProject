@@ -591,6 +591,12 @@ float selectedPointX = 0;
 float selectedPointY = 0;
 float selectedPointZ = 0;
 
+float X = 0.0;
+float Y = 0.0;
+float Z = 0.0;
+
+bool point_selected = false;
+
 void mainRenderLoop()
 {
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -625,39 +631,58 @@ void mainRenderLoop()
         {
             ImGui::Begin("Menu");
 
+            
             ImGui::Checkbox("Controll Mesh", &cont_mesh);
             ImGui::Checkbox("Controll Points", &cont_points);
 
-            ImGui::RadioButton("Wireframe", &wireframe, 0);
-            ImGui::RadioButton("Surface", &wireframe, 1);
-            //ImGui::Checkbox("Wireframe", &wireframe);
-            //ImGui::Checkbox("Surface", &surface);
+            if (ImGui::CollapsingHeader("Surface Controlls"))
+            {
+                ImGui::RadioButton("Wireframe", &wireframe, 0);
+                ImGui::RadioButton("Surface", &wireframe, 1);
+                //ImGui::Checkbox("Wireframe", &wireframe);
+                //ImGui::Checkbox("Surface", &surface);
 
-            ImGui::SliderInt("N", &slider_N, 4, 10);
-            ImGui::SliderInt("M", &slider_M, 4, 10);
+                ImGui::SliderInt("N", &slider_N, 4, 10);
+                ImGui::SliderInt("M", &slider_M, 4, 10);
 
-            ImGui::CaptureKeyboardFromApp(false);
-            ImGui::SliderFloat("U", &slider_U, 0.1, 0.01);
-            ImGui::SliderFloat("V", &slider_V, 0.1, 0.01);
+                ImGui::CaptureKeyboardFromApp(false);
+                ImGui::SliderFloat("U", &slider_U, 0.1, 0.01);
+                ImGui::SliderFloat("V", &slider_V, 0.1, 0.01);
 
-            /*TODO*/
-            //ImGui::SliderFloat("Light X", &light_pos[0], 1, 10);
-            //ImGui::SliderFloat("Light Y", &light_pos[1], 1, 10);
-            //ImGui::SliderFloat("Light Z", &light_pos[2], 1, 10);
-
-            /*Külön ablakban, a pont kiválasztása után*/
-            //ImGui::InputFloat("Kiv. pont X poz:", &selectedPointX);
-            //ImGui::InputFloat("Kiv. pont Y poz:", &selectedPointY);
-            //ImGui::InputFloat("Kiv. pont Z poz:", &selectedPointZ);
-
-            // Button to trigger action
-            if (ImGui::Button("Rendben")) {
-                // Handle button click event
-                std::cout << "X Value entered: " << selectedPointX << std::endl;
-                std::cout << "Y Value entered: " << selectedPointY << std::endl;
-                std::cout << "Z Value entered: " << selectedPointZ << std::endl;
             }
 
+            if (ImGui::CollapsingHeader("Light Controlls"))
+            {
+                /*TODO*/
+                ImGui::SliderFloat("Light X", &light_pos[0], 1, 10);
+                ImGui::SliderFloat("Light Y", &light_pos[1], 1, 10);
+                ImGui::SliderFloat("Light Z", &light_pos[2], 1, 10);
+            }
+            
+
+            // Button to trigger action
+            //if (ImGui::Button("Rendben")) {
+            //    // Handle button click event
+            //    std::cout << "X Value entered: " << selectedPointX << std::endl;
+            //    std::cout << "Y Value entered: " << selectedPointY << std::endl;
+            //    std::cout << "Z Value entered: " << selectedPointZ << std::endl;
+            //}
+
+            /*
+                TODO: A kiválasztott kontroll pont mellett megjelenik egy új a ablak, amelyben a felhasználó beállíthatja a pont új koordinátáit. Az ablakban lévõ sliderek, a pont aktuális koordinátáit mutatják.
+                Ha a felhasználó új pontot választ ki - az ablakban lévõ sliderek az új pont koordinátáit változtatják meg.
+                Ha a felhasználó üres helyre (nem kontroll pont közelébe) kattint, az ablak eltûnik
+            */
+            if (point_selected)
+            {
+                ImGui::Begin("New Coordinates");
+
+                ImGui::SliderFloat("X", &X, -5, 5);
+                ImGui::SliderFloat("Y", &Y, -5, 5);
+                ImGui::SliderFloat("Z", &Z, -5, 5);
+
+                ImGui::End();
+            }
 
             ImGui::End();
         }
@@ -841,6 +866,8 @@ void mousebuttonCallback(GLFWwindow* window, int button, int action, int mods)
     {
         if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
         {
+
+            point_selected = !point_selected;
             double xpos, ypos;
             //getting cursor position
             glfwGetCursorPos(window, &xpos, &ypos);
