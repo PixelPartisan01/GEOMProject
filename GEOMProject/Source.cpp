@@ -482,7 +482,7 @@ std::vector<GLfloat> genWireframe()
 
 bool credits = false;
 bool show_window = true;
-
+int selectedPointId = 0;
 float selectedPointX = 0;
 float selectedPointY = 0;
 float selectedPointZ = 0;
@@ -528,6 +528,7 @@ void mainRenderLoop()
             ImGui::SliderFloat("U", &slider_U, 0.1, 0.01);
             ImGui::SliderFloat("V", &slider_V, 0.1, 0.01);
 
+            ImGui::InputInt("Kiv. pont Id:", &selectedPointId);
             ImGui::InputFloat("Kiv. pont X poz:", &selectedPointX);
             ImGui::InputFloat("Kiv. pont Y poz:", &selectedPointY);
             ImGui::InputFloat("Kiv. pont Z poz:", &selectedPointZ);
@@ -538,6 +539,47 @@ void mainRenderLoop()
                 std::cout << "X Value entered: " << selectedPointX << std::endl;
                 std::cout << "Y Value entered: " << selectedPointY << std::endl;
                 std::cout << "Z Value entered: " << selectedPointZ << std::endl;
+                controll_vertices[selectedPointId][0] = selectedPointX;
+                controll_vertices[selectedPointId][1] = selectedPointY;
+                controll_vertices[selectedPointId][2] = selectedPointZ;
+                std::cout << "0. control pont X: " << controll_vertices[selectedPointId][0] << std::endl;
+                std::cout << "0. control pont Y: " << controll_vertices[selectedPointId][1] << std::endl;
+                std::cout << "0. control pont Z: " << controll_vertices[selectedPointId][2] << std::endl;
+                int br = 1;
+                cont_v_tmp.clear();
+                for (int i = 0; i < controll_vertices.size(); i++)
+                {
+                    if (br == slider_M)
+                    {
+                        br = 1;
+
+                        continue;
+                    }
+
+                    cont_v_tmp.push_back(controll_vertices[i][0]);
+                    cont_v_tmp.push_back(controll_vertices[i][1]);
+                    cont_v_tmp.push_back(controll_vertices[i][2]);
+
+                    cont_v_tmp.push_back(controll_vertices[i + 1][0]);
+                    cont_v_tmp.push_back(controll_vertices[i + 1][1]);
+                    cont_v_tmp.push_back(controll_vertices[i + 1][2]);
+                    br++;
+                }
+
+                for (int i = 0; i < controll_vertices.size() - slider_M; i++)
+                {
+                    cont_v_tmp.push_back(controll_vertices[i][0]);
+                    cont_v_tmp.push_back(controll_vertices[i][1]);
+                    cont_v_tmp.push_back(controll_vertices[i][2]);
+
+                    cont_v_tmp.push_back(controll_vertices[i + slider_M][0]);
+                    cont_v_tmp.push_back(controll_vertices[i + slider_M][1]);
+                    cont_v_tmp.push_back(controll_vertices[i + slider_M][2]);
+                }
+
+                Bez_v_tmp = genWireframe();
+                genBezier(slider_N, slider_M);
+                
             }
 
 
