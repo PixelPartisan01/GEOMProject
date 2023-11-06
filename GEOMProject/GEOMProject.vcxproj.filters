@@ -88,5 +88,8 @@
     <ClInclude Include="imGui\imstb_rectpack.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="shaderprintf.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
