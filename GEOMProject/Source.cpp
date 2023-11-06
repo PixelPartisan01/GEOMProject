@@ -1,4 +1,4 @@
-#define		GLEW_STATIC
+ï»¿#define		GLEW_STATIC
 #include	<stdio.h>
 #include    <iostream>
 #include    <string>
@@ -76,21 +76,21 @@ std::vector<std::vector<GLfloat>> Bezier;
 std::vector<GLfloat> sur_Bezier;
 std::vector<GLfloat> norm_Bezier;
 
-int    wireframe       = 0;
-bool    surface         = false;
-bool    cont_mesh       = true;
-bool    cont_points     = true;
-float   slider_x        = 0.0f;
-float   slider_y        = 0.0f;
-float   slider_z        = 0.0f;
-int     slider_N        = 5;
-int     slider_M        = 4;
-int     slider_N_old    = 0;
-int     slider_M_old    = 0;
-float   slider_U        = 0.05;
-float   slider_V        = 0.05;
-float   slider_U_old    = 0.0f;
-float   slider_V_old    = 0.0f;
+int    wireframe = 0;
+bool    surface = false;
+bool    cont_mesh = true;
+bool    cont_points = true;
+float   slider_x = 0.0f;
+float   slider_y = 0.0f;
+float   slider_z = 0.0f;
+int     slider_N = 5;
+int     slider_M = 4;
+int     slider_N_old = 0;
+int     slider_M_old = 0;
+int     slider_U = 20;
+int     slider_V = 20;
+int     slider_U_old = 0;
+int     slider_V_old = 0;
 
 GLfloat n = 0.1f; // near
 GLfloat f = 100.0f; // far
@@ -104,7 +104,7 @@ GLfloat Pz = -(2.0f * f * n) / (f - n);
 mat4    proj_mat = { Sx, 0.0f, 0.0f, 0.0f, 0.0f, Sy, 0.0f, 0.0f, 0.0f, 0.0f, Sz, -1.0f, 0.0f, 0.0f, Pz, 0.0f };
 GLfloat cam_speed = 1.0f;
 GLfloat cam_yaw_speed = 10.0f;
-GLfloat cam_pos[]{ (GLfloat)(slider_N-1)/2.0f, (GLfloat)(slider_M-1)/2.0f, 5.0f };
+GLfloat cam_pos[]{ (GLfloat)(slider_N - 1) / 2.0f, (GLfloat)(slider_M - 1) / 2.0f, 5.0f };
 GLfloat cam_yaw = 0.0f;
 GLfloat rotateY = 0.0f;
 GLfloat rotateX = 0.0f;
@@ -137,7 +137,7 @@ int rot = 0;
 
 int main()
 {
-    T * R;
+    T* R;
     int ret = init();
 
     if (ret != 0)
@@ -205,7 +205,7 @@ void keyCallBack()
     }
     if (glfwGetKey(g_window, GLFW_KEY_UP))
     {
-        rotateX+= 1.0f;
+        rotateX += 1.0f;
         rotate_moved = true;
     }
     if (glfwGetKey(g_window, GLFW_KEY_DOWN))
@@ -217,17 +217,17 @@ void keyCallBack()
 
 GLfloat factorial(int n)
 {
-    bool handle_odd =   false;
-    GLfloat upto_number =   n;
+    bool handle_odd = false;
+    GLfloat upto_number = n;
 
     if ((n & 1) == 1)
     {
-        upto_number -=  1;
-        handle_odd   =  true;
+        upto_number -= 1;
+        handle_odd = true;
     }
-    
-    GLfloat next_sum    =   upto_number;
-    GLfloat next_multi  =   upto_number;
+
+    GLfloat next_sum = upto_number;
+    GLfloat next_multi = upto_number;
     GLfloat factorial = 1;
 
     while (next_sum >= 2)
@@ -245,7 +245,7 @@ GLfloat factorial(int n)
     return factorial;
 }
 
-/* MxN - es kontroll háló legenerálása */
+/* MxN - es kontroll hï¿½lï¿½ legenerï¿½lï¿½sa */
 void genGrid(GLint N, GLint M)
 {
     controll_vertices.clear();
@@ -294,13 +294,14 @@ void genBezier(GLint N, GLint M)
     num_U = 0;
 
 
-    for (GLfloat u = 0.0f; u <= 1.0f; u += slider_U)
+    for (GLdouble u = 0.0f; u <= (GLdouble)1.0f + ((1.0 / (GLdouble)slider_U) / (GLdouble)slider_U); u += 1.0 / (GLdouble)slider_U)
     {
-        num_U++;
+        //printf("%lf\n", u);
         num_V = 0;
-        for (GLfloat v = 0.0f; v <= 1.0f; v += slider_V)
+        for (GLdouble v = 0.0f; v <= (GLdouble)1.0f + ((1.0 / (GLdouble)slider_V) / (GLdouble)slider_V); v +=  1.0 / (GLdouble)slider_V)
         {
             num_V++;
+            //printf("%lf\n", v);
             for (GLint i = 0; i < N; i++)
             {
                 for (GLint j = 0; j < M; j++)
@@ -310,16 +311,39 @@ void genBezier(GLint N, GLint M)
                     zBezier.push_back(B(N - 1, i, u) * B(M - 1, j, v) * controll_vertices[i * M + j][2]);
                 }
             }
-            
+
             Bezier.push_back({ std::accumulate(xBezier.begin(), xBezier.end(), 0.0f), std::accumulate(yBezier.begin(), yBezier.end(), 0.0f), std::accumulate(zBezier.begin(), zBezier.end(), 0.0f) });
 
             xBezier.clear();
             yBezier.clear();
             zBezier.clear();
         }
+
+        
     }
 
-    //printf("\n\nBezier-felület pontjai:\n\n");
+    //for (GLdouble v = 0.0f; v <= (GLdouble)1.0f; v += (GLdouble)slider_V)
+    //{
+    //    num_V++;
+    //    for (GLint i = 0; i < N; i++)
+    //    {
+    //        for (GLint j = 0; j < M; j++)
+    //        {
+    //            xBezier.push_back(B(N - 1, i, 1.0) * B(M - 1, j, v) * controll_vertices[i * M + j][0]);
+    //            yBezier.push_back(B(N - 1, i, 1.0) * B(M - 1, j, v) * controll_vertices[i * M + j][1]);
+    //            zBezier.push_back(B(N - 1, i, 1.0) * B(M - 1, j, v) * controll_vertices[i * M + j][2]);
+    //        }
+    //    }
+
+    //    Bezier.push_back({ std::accumulate(xBezier.begin(), xBezier.end(), 0.0f), std::accumulate(yBezier.begin(), yBezier.end(), 0.0f), std::accumulate(zBezier.begin(), zBezier.end(), 0.0f) });
+
+    //    xBezier.clear();
+    //    yBezier.clear();
+    //    zBezier.clear();
+    //}
+
+
+    //printf("\n\nBezier-felï¿½let pontjai:\n\n");
     genSurface();
     //for (auto v : Bezier)
     //{
@@ -372,7 +396,7 @@ int init()
     light_pos.push_back(5.0f);
 
     glGenBuffers(VBO, vertex_buffer_object);
-    
+
     glGenVertexArrays(VAO, vertex_array_object);
 
     glBindVertexArray(vertex_array_object[0]);
@@ -563,8 +587,8 @@ std::vector<GLfloat> genWireframe()
 
     for (auto row = Bezier.begin(); row != Bezier.end() - 1; row++)
     {
-        
-        if (br == std::ceil(1.0 / slider_V))
+
+        if (br == num_V)
         {
             br = 1;
             continue;
@@ -577,7 +601,7 @@ std::vector<GLfloat> genWireframe()
         tmp.push_back(std::next(row)[0][0]);
         tmp.push_back(std::next(row)[0][1]);
         tmp.push_back(std::next(row)[0][2]);
-        
+
         br++;
     }
 
@@ -631,7 +655,7 @@ void mainRenderLoop()
         {
             ImGui::Begin("Menu");
 
-            
+
             ImGui::Checkbox("Controll Mesh", &cont_mesh);
             ImGui::Checkbox("Controll Points", &cont_points);
 
@@ -646,8 +670,10 @@ void mainRenderLoop()
                 ImGui::SliderInt("M", &slider_M, 4, 10);
 
                 ImGui::CaptureKeyboardFromApp(false);
-                ImGui::SliderFloat("U", &slider_U, 0.1, 0.01);
-                ImGui::SliderFloat("V", &slider_V, 0.1, 0.01);
+                //ImGui::SliderFloat("U", &slider_U, 0.1, 0.01);
+                //ImGui::SliderFloat("V", &slider_V, 0.1, 0.01);
+                ImGui::SliderInt("U", &slider_U, 2, 50);
+                ImGui::SliderInt("V", &slider_V, 2, 50);
 
             }
 
@@ -658,7 +684,7 @@ void mainRenderLoop()
                 ImGui::SliderFloat("Light Y", &light_pos[1], 1, 10);
                 ImGui::SliderFloat("Light Z", &light_pos[2], 1, 10);
             }
-            
+
 
             // Button to trigger action
             //if (ImGui::Button("Rendben")) {
@@ -669,9 +695,9 @@ void mainRenderLoop()
             //}
 
             /*
-                TODO: A kiválasztott kontroll pont mellett megjelenik egy új a ablak, amelyben a felhasználó beállíthatja a pont új koordinátáit. Az ablakban lévõ sliderek, a pont aktuális koordinátáit mutatják.
-                Ha a felhasználó új pontot választ ki - az ablakban lévõ sliderek az új pont koordinátáit változtatják meg.
-                Ha a felhasználó üres helyre (nem kontroll pont közelébe) kattint, az ablak eltûnik
+                TODO: A kivï¿½lasztott kontroll pont mellett megjelenik egy ï¿½j a ablak, amelyben a felhasznï¿½lï¿½ beï¿½llï¿½thatja a pont ï¿½j koordinï¿½tï¿½it. Az ablakban lï¿½vï¿½ sliderek, a pont aktuï¿½lis koordinï¿½tï¿½it mutatjï¿½k.
+                Ha a felhasznï¿½lï¿½ ï¿½j pontot vï¿½laszt ki - az ablakban lï¿½vï¿½ sliderek az ï¿½j pont koordinï¿½tï¿½it vï¿½ltoztatjï¿½k meg.
+                Ha a felhasznï¿½lï¿½ ï¿½res helyre (nem kontroll pont kï¿½zelï¿½be) kattint, az ablak eltï¿½nik
             */
             if (point_selected)
             {
@@ -687,8 +713,8 @@ void mainRenderLoop()
             ImGui::End();
         }
 
-        if (slider_U == 0.0) slider_U = 1.0;
-        if (slider_V == 0.0) slider_V = 1.0;
+        if (slider_U == 0) slider_U = 1;
+        if (slider_V == 0) slider_V = 1;
         if (slider_M == 0) slider_M = 1;
         if (slider_N == 0) slider_N = 1;
 
@@ -744,9 +770,9 @@ void mainRenderLoop()
 
             Bez_v_tmp = genWireframe();
 
-           //Bez_v_tmp.push_back(0.0f);
+            //Bez_v_tmp.push_back(0.0f);
         }
-        
+
 
         DT = deltaTime();
 
@@ -769,14 +795,14 @@ void mainRenderLoop()
             mat4 Tback = translate(identity_mat4(), vec3(-2.0f, -2.0f, -2.0f));
 
             mat4 model_mat = identity_mat4(); // Initialize with identity matrix
-            model_mat = model_mat * Tto *  RY * RX * Tback; // Combine transformations
+            model_mat = model_mat * Tto * RY * RX * Tback; // Combine transformations
 
             glUniformMatrix4fv(model_mat_location, 1, GL_FALSE, model_mat.m);
         }
-        
+
         glPointSize(10.0);
 
-        /*TODO: Fix This*/  
+        /*TODO: Fix This*/
         glBindVertexArray(vertex_array_object[0]);
 
         if (cont_points)
@@ -814,7 +840,7 @@ void mainRenderLoop()
 
         if (wireframe == 1)
         {
-            glUniform1i(surface_loc, 3);         
+            glUniform1i(surface_loc, 3);
 
             glEnableVertexAttribArray(4);
             glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[4]);
@@ -880,11 +906,11 @@ void mousebuttonCallback(GLFWwindow* window, int button, int action, int mods)
 
             vec3 tv;
 
-           
+
 
             GLdouble objX;
             GLdouble objY;
-            GLdouble objZ;           
+            GLdouble objZ;
 
             glGetIntegerv(GL_VIEWPORT, v);
             //glGetDoublev(GL_MODELVIEW_MATRIX, m);
@@ -896,12 +922,12 @@ void mousebuttonCallback(GLFWwindow* window, int button, int action, int mods)
 
             glReadPixels(xpos, (int)winY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &winZ);
 
-            
+
             for (int i = 0; i < 16; i++)
             {
                 m[i] = model_mat.m[i];
             }
-            
+
             for (int i = 0; i < 16; i++)
             {
                 p[i] = proj_mat.m[i];
