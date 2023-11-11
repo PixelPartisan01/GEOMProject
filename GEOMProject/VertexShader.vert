@@ -8,13 +8,19 @@ layout (location = 4) in vec3 norm_Bez_surface;
 
 uniform mat4	proj, view, model, vert;
 uniform int		surface;
-uniform vec3	light_pos;
+uniform vec3 light_pos;
+uniform int shading;
+
+in vec4 a_Position;
+in vec3 a_Normal; 
 
 out vec3 fragColor;
 out vec4 Normal;
 out vec4 FragPos;
-out vec4 lp;
-out int	control_mesh;
+out int  control_mesh;
+//out vec3 modelViewVertex, modelViewNormal, lightVector;
+out float diffuse_gouraud;
+
 
 void main()
 {
@@ -42,10 +48,15 @@ void main()
 		gl_Position = proj * view * model * vert * vec4(position_Bez_surface, 1.0);
 
 		vec3 ambient = 1.0 * vec3(1.0, 1.0, 1.0);
+//
+		vec3 modelViewVertex = vec3(view * model * vec4(model * vec4(position_Bez_surface, 1.0)));
+		vec3 modelViewNormal = vec3(view * model * vec4(norm_Bez_surface, 0.0));
+		float dist = length(light_pos - modelViewVertex);
+		vec3 lightVector = normalize(light_pos - modelViewVertex);
+		diffuse_gouraud = max(dot(modelViewNormal, lightVector), 0.1) * (1.0 / (1.0 + (0.25 * dist * dist)));
 
 		fragColor = vec3(19.0f / 255.0f, 245.0f / 255.0f , 2.0f / 255.0f) * ambient;
 		FragPos = vec4(model * vec4(position_Bez_surface, 1.0));
 		Normal = vec4(norm_Bez_surface, 1.0);
-		lp = vec4(light_pos, 1.0);
 	}
 }

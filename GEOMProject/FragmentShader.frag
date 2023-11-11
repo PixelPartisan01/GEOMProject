@@ -3,19 +3,22 @@
 in vec3 fragColor;
 in vec4 Normal;
 in vec4 FragPos;
-in vec4 lp;
 flat in int control_mesh;
 
-//uniform vec3 light_pos;
 uniform mat4 model;
 uniform mat4 view;
+uniform vec3 light_pos;
+uniform int shading;
 
+in float diffuse_gouraud;
 out vec4 color;
 
 void main()
 {
 	vec4 lightColor = vec4(1.0, 1.0, 1.0, 1.0);
 	vec4 norm = normalize(Normal);
+	vec4 lp = vec4(light_pos, 1.0);
+
 //	vec4 lightDir = normalize(lp - FragPos);
 //	float diff = max(dot(norm, lightDir), 0.0);
 //	vec4 diffuse = diff * lightColor;
@@ -24,6 +27,7 @@ void main()
 	vec4 diff;
 	if(control_mesh == 0)
 	{
+		
 		diff = cos_angle * lightColor;
 	}
 	else
@@ -31,5 +35,6 @@ void main()
 		diff = vec4(1.0, 1.0, 1.0, 1.0);
 	}
 
-	color = vec4(fragColor,1.0) * diff;
+	if (shading == 0) color = vec4(fragColor,1.0) * diff;
+	else			  color = vec4(fragColor,1.0) * diffuse_gouraud;
 };
