@@ -583,7 +583,7 @@ std::vector<GLfloat> genWireframe()
 
 bool credits = false;
 bool show_window = true;
-
+int selectedPointId = 0;
 float selectedPointX = 0;
 float selectedPointY = 0;
 float selectedPointZ = 0;
@@ -653,10 +653,53 @@ void mainRenderLoop()
                 ImGui::RadioButton("Flat Shading", &shading, 0);
                 ImGui::RadioButton("Gouraud Shading", &shading, 1);
 
-                /*TODO*/
-                ImGui::SliderFloat("Light X", &light_pos[0], -10.0, 10.0);
-                ImGui::SliderFloat("Light Y", &light_pos[1], -10.0, 10.0);
-                ImGui::SliderFloat("Light Z", &light_pos[2], -10.0, 10.0);
+            // Button to trigger action
+            if (ImGui::Button("Rendben")) {
+                // Handle button click event
+                std::cout << "X Value entered: " << selectedPointX << std::endl;
+                std::cout << "Y Value entered: " << selectedPointY << std::endl;
+                std::cout << "Z Value entered: " << selectedPointZ << std::endl;
+                controll_vertices[selectedPointId][0] = selectedPointX;
+                controll_vertices[selectedPointId][1] = selectedPointY;
+                controll_vertices[selectedPointId][2] = selectedPointZ;
+                std::cout << "0. control pont X: " << controll_vertices[selectedPointId][0] << std::endl;
+                std::cout << "0. control pont Y: " << controll_vertices[selectedPointId][1] << std::endl;
+                std::cout << "0. control pont Z: " << controll_vertices[selectedPointId][2] << std::endl;
+                int br = 1;
+                cont_v_tmp.clear();
+                for (int i = 0; i < controll_vertices.size(); i++)
+                {
+                    if (br == slider_M)
+                    {
+                        br = 1;
+
+                        continue;
+                    }
+
+                    cont_v_tmp.push_back(controll_vertices[i][0]);
+                    cont_v_tmp.push_back(controll_vertices[i][1]);
+                    cont_v_tmp.push_back(controll_vertices[i][2]);
+
+                    cont_v_tmp.push_back(controll_vertices[i + 1][0]);
+                    cont_v_tmp.push_back(controll_vertices[i + 1][1]);
+                    cont_v_tmp.push_back(controll_vertices[i + 1][2]);
+                    br++;
+                }
+
+                for (int i = 0; i < controll_vertices.size() - slider_M; i++)
+                {
+                    cont_v_tmp.push_back(controll_vertices[i][0]);
+                    cont_v_tmp.push_back(controll_vertices[i][1]);
+                    cont_v_tmp.push_back(controll_vertices[i][2]);
+
+                    cont_v_tmp.push_back(controll_vertices[i + slider_M][0]);
+                    cont_v_tmp.push_back(controll_vertices[i + slider_M][1]);
+                    cont_v_tmp.push_back(controll_vertices[i + slider_M][2]);
+                }
+
+                Bez_v_tmp = genWireframe();
+                genBezier(slider_N, slider_M);
+                
             }
 
             if (point_selected)
