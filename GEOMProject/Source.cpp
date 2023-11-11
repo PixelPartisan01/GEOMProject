@@ -593,6 +593,7 @@ float Y = 0.0;
 float Z = 0.0;
 
 bool point_selected = false;
+bool focused = false;
 
 void mainRenderLoop()
 {
@@ -645,7 +646,6 @@ void mainRenderLoop()
                 ImGui::CaptureKeyboardFromApp(false);
                 ImGui::SliderInt("U", &slider_U, 2, 50);
                 ImGui::SliderInt("V", &slider_V, 2, 50);
-
             }
 
             if (ImGui::CollapsingHeader("Light Controlls"))
@@ -653,22 +653,92 @@ void mainRenderLoop()
                 ImGui::RadioButton("Flat Shading", &shading, 0);
                 ImGui::RadioButton("Gouraud Shading", &shading, 1);
 
-            // Button to trigger action
-            if (ImGui::Button("Rendben")) {
-                // Handle button click event
-                std::cout << "X Value entered: " << selectedPointX << std::endl;
-                std::cout << "Y Value entered: " << selectedPointY << std::endl;
-                std::cout << "Z Value entered: " << selectedPointZ << std::endl;
-                controll_vertices[selectedPointId][0] = selectedPointX;
-                controll_vertices[selectedPointId][1] = selectedPointY;
-                controll_vertices[selectedPointId][2] = selectedPointZ;
-                std::cout << "0. control pont X: " << controll_vertices[selectedPointId][0] << std::endl;
-                std::cout << "0. control pont Y: " << controll_vertices[selectedPointId][1] << std::endl;
-                std::cout << "0. control pont Z: " << controll_vertices[selectedPointId][2] << std::endl;
+                ImGui::SliderFloat("Light X", &light_pos[0], -10.0, 10.0);
+                ImGui::SliderFloat("Light Y", &light_pos[1], -10.0, 10.0);
+                ImGui::SliderFloat("Light Z", &light_pos[2], -10.0, 10.0);
+
+            }
+
+            if (ImGui::CollapsingHeader("Control Points"))
+            {
+                ImGui::InputInt("Kiv. pont Id:", &selectedPointId);
+                ImGui::InputFloat("Kiv. pont X poz:", &selectedPointX);
+                ImGui::InputFloat("Kiv. pont Y poz:", &selectedPointY);
+                ImGui::InputFloat("Kiv. pont Z poz:", &selectedPointZ);
+
+                // Button to trigger action
+                if (ImGui::Button("Rendben"))
+                {
+                    // Handle button click event
+                    std::cout << "X Value entered: " << selectedPointX << std::endl;
+                    std::cout << "Y Value entered: " << selectedPointY << std::endl;
+                    std::cout << "Z Value entered: " << selectedPointZ << std::endl;
+                    controll_vertices[selectedPointId][0] = selectedPointX;
+                    controll_vertices[selectedPointId][1] = selectedPointY;
+                    controll_vertices[selectedPointId][2] = selectedPointZ;
+                    std::cout << "0. control pont X: " << controll_vertices[selectedPointId][0] << std::endl;
+                    std::cout << "0. control pont Y: " << controll_vertices[selectedPointId][1] << std::endl;
+                    std::cout << "0. control pont Z: " << controll_vertices[selectedPointId][2] << std::endl;
+                    int br = 1;
+                    cont_v_tmp.clear();
+                    for (int i = 0; i < controll_vertices.size(); i++)
+                    {
+                        if (br == slider_M)
+                        {
+                            br = 1;
+
+                            continue;
+                        }
+
+                        cont_v_tmp.push_back(controll_vertices[i][0]);
+                        cont_v_tmp.push_back(controll_vertices[i][1]);
+                        cont_v_tmp.push_back(controll_vertices[i][2]);
+
+                        cont_v_tmp.push_back(controll_vertices[i + 1][0]);
+                        cont_v_tmp.push_back(controll_vertices[i + 1][1]);
+                        cont_v_tmp.push_back(controll_vertices[i + 1][2]);
+                        br++;
+                    }
+
+                    for (int i = 0; i < controll_vertices.size() - slider_M; i++)
+                    {
+                        cont_v_tmp.push_back(controll_vertices[i][0]);
+                        cont_v_tmp.push_back(controll_vertices[i][1]);
+                        cont_v_tmp.push_back(controll_vertices[i][2]);
+
+                        cont_v_tmp.push_back(controll_vertices[i + slider_M][0]);
+                        cont_v_tmp.push_back(controll_vertices[i + slider_M][1]);
+                        cont_v_tmp.push_back(controll_vertices[i + slider_M][2]);
+                    }
+
+                    Bez_v_tmp = genWireframe();
+                    genBezier(slider_N, slider_M);
+
+                }
+            }
+
+            ImGui::End();
+        }
+
+            //std::cout << glGetError() << std::endl;
+
+            if (slider_U == 0) slider_U = 1;
+            if (slider_V == 0) slider_V = 1;
+            if (slider_M == 0) slider_M = 1;
+            if (slider_N == 0) slider_N = 1;
+
+            if (slider_M != slider_M_old || slider_N != slider_N_old)
+            {
                 int br = 1;
+                genGrid(slider_N, slider_M);
+                slider_M_old = slider_M;
+                slider_N_old = slider_N;
+
                 cont_v_tmp.clear();
+
                 for (int i = 0; i < controll_vertices.size(); i++)
                 {
+
                     if (br == slider_M)
                     {
                         br = 1;
@@ -683,6 +753,7 @@ void mainRenderLoop()
                     cont_v_tmp.push_back(controll_vertices[i + 1][0]);
                     cont_v_tmp.push_back(controll_vertices[i + 1][1]);
                     cont_v_tmp.push_back(controll_vertices[i + 1][2]);
+
                     br++;
                 }
 
@@ -698,185 +769,119 @@ void mainRenderLoop()
                 }
 
                 Bez_v_tmp = genWireframe();
+            }
+
+            if (slider_U != slider_U_old || slider_V != slider_V_old)
+            {
                 genBezier(slider_N, slider_M);
-                
+                slider_U_old = slider_U;
+                slider_V_old = slider_V;
+
+                Bez_v_tmp = genWireframe();
+
+                //Bez_v_tmp.push_back(0.0f);
             }
 
-            if (point_selected)
+
+            DT = deltaTime();
+
+            glUseProgram(shader_program_object);
+            glUniform3fv(light_pos_location, 1, light_pos);
+            glUniform1i(shading_location, shading);
+
+            if (cam_moved)
             {
-                ImGui::Begin("New Coordinates");
+                mat4 T = translate(identity_mat4(), vec3(-cam_pos[0], -cam_pos[1], -cam_pos[2]));
+                mat4 R = rotate_y_deg(identity_mat4(), -cam_yaw);
 
-                ImGui::SliderFloat("X", &X, -5, 5);
-                ImGui::SliderFloat("Y", &Y, -5, 5);
-                ImGui::SliderFloat("Z", &Z, -5, 5);
-
-                ImGui::End();
+                mat4 view_mat = R * T;
+                glUniformMatrix4fv(view_mat_location, 1, GL_FALSE, view_mat.m);
             }
 
-            ImGui::End();
-        }
-
-        //std::cout << glGetError() << std::endl;
-
-        if (slider_U == 0) slider_U = 1;
-        if (slider_V == 0) slider_V = 1;
-        if (slider_M == 0) slider_M = 1;
-        if (slider_N == 0) slider_N = 1;
-
-        if (slider_M != slider_M_old || slider_N != slider_N_old)
-        {
-            int br = 1;
-            genGrid(slider_N, slider_M);
-            slider_M_old = slider_M;
-            slider_N_old = slider_N;
-
-            cont_v_tmp.clear();
-
-            for (int i = 0; i < controll_vertices.size(); i++)
+            if (rotate_moved)
             {
+                mat4 RY = rotate_y_deg(identity_mat4(), rotateY);
+                mat4 RX = rotate_x_deg(identity_mat4(), rotateX);
+                mat4 Tto = translate(identity_mat4(), vec3(2.0f, 2.0f, 2.0f));
+                mat4 Tback = translate(identity_mat4(), vec3(-2.0f, -2.0f, -2.0f));
 
-                if (br == slider_M)
+                mat4 model_mat = identity_mat4(); // Initialize with identity matrix
+                model_mat = model_mat * Tto * RY * RX * Tback; // Combine transformations
+
+                glUniformMatrix4fv(model_mat_location, 1, GL_FALSE, model_mat.m);
+            }
+
+            
+
+            glPointSize(10.0);
+
+            /*TODO: Fix This*/
+            glBindVertexArray(vertex_array_object[0]);
+
+            if (cont_points)
+            {
+                glUniform1i(surface_loc, 0);
+                glEnableVertexAttribArray(0);
+                glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[0]);
+                for (int i = 0; i < controll_vertices.size(); i++)
                 {
-                    br = 1;
-
-                    continue;
+                    glBufferData(GL_ARRAY_BUFFER, controll_vertices[i].size() * sizeof(GLfloat), controll_vertices[i].data(), GL_STATIC_DRAW);
+                    glDrawArrays(GL_POINTS, 0, controll_vertices[i].size());
                 }
-
-                cont_v_tmp.push_back(controll_vertices[i][0]);
-                cont_v_tmp.push_back(controll_vertices[i][1]);
-                cont_v_tmp.push_back(controll_vertices[i][2]);
-
-                cont_v_tmp.push_back(controll_vertices[i + 1][0]);
-                cont_v_tmp.push_back(controll_vertices[i + 1][1]);
-                cont_v_tmp.push_back(controll_vertices[i + 1][2]);
-
-                br++;
             }
 
-            for (int i = 0; i < controll_vertices.size() - slider_M; i++)
+            glLineWidth(30.0);
+
+            if (cont_mesh)
             {
-                cont_v_tmp.push_back(controll_vertices[i][0]);
-                cont_v_tmp.push_back(controll_vertices[i][1]);
-                cont_v_tmp.push_back(controll_vertices[i][2]);
+                glUniform1i(surface_loc, 2);
+                glEnableVertexAttribArray(2);
+                glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[2]);
 
-                cont_v_tmp.push_back(controll_vertices[i + slider_M][0]);
-                cont_v_tmp.push_back(controll_vertices[i + slider_M][1]);
-                cont_v_tmp.push_back(controll_vertices[i + slider_M][2]);
+                glBufferData(GL_ARRAY_BUFFER, cont_v_tmp.size() * sizeof(GLfloat), cont_v_tmp.data(), GL_STATIC_DRAW);
+                glDrawArrays(GL_LINES, 0, cont_v_tmp.size());
             }
 
-            Bez_v_tmp = genWireframe();
-        }
-
-        if (slider_U != slider_U_old || slider_V != slider_V_old)
-        {
-            genBezier(slider_N, slider_M);
-            slider_U_old = slider_U;
-            slider_V_old = slider_V;
-
-            Bez_v_tmp = genWireframe();
-
-            //Bez_v_tmp.push_back(0.0f);
-        }
-
-
-        DT = deltaTime();
-
-        glUseProgram(shader_program_object);
-
-        if (cam_moved)
-        {
-            mat4 T = translate(identity_mat4(), vec3(-cam_pos[0], -cam_pos[1], -cam_pos[2]));
-            mat4 R = rotate_y_deg(identity_mat4(), -cam_yaw);
-
-            mat4 view_mat = R * T;
-            glUniformMatrix4fv(view_mat_location, 1, GL_FALSE, view_mat.m);
-        }
-
-        if (rotate_moved)
-        {
-            mat4 RY = rotate_y_deg(identity_mat4(), rotateY);
-            mat4 RX = rotate_x_deg(identity_mat4(), rotateX);
-            mat4 Tto = translate(identity_mat4(), vec3(2.0f, 2.0f, 2.0f));
-            mat4 Tback = translate(identity_mat4(), vec3(-2.0f, -2.0f, -2.0f));
-
-            mat4 model_mat = identity_mat4(); // Initialize with identity matrix
-            model_mat = model_mat * Tto * RY * RX * Tback; // Combine transformations
-
-            glUniformMatrix4fv(model_mat_location, 1, GL_FALSE, model_mat.m);
-        }
-
-        glPointSize(10.0);
-
-        /*TODO: Fix This*/
-        glBindVertexArray(vertex_array_object[0]);
-
-        glUniform3fv(light_pos_location, 1, light_pos);
-        glUniform1i(shading_location, shading);
-
-        if (cont_points)
-        {
-            glUniform1i(surface_loc, 0);
-            glEnableVertexAttribArray(0);
-            glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[0]);
-            for (int i = 0; i < controll_vertices.size(); i++)
+            if (wireframe == 0)
             {
-                glBufferData(GL_ARRAY_BUFFER, controll_vertices[i].size() * sizeof(GLfloat), controll_vertices[i].data(), GL_STATIC_DRAW);
-                glDrawArrays(GL_POINTS, 0, controll_vertices[i].size());
+                glUniform1i(surface_loc, 1);
+                glEnableVertexAttribArray(1);
+                glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[1]);
+                glBufferData(GL_ARRAY_BUFFER, Bez_v_tmp.size() * sizeof(GLfloat), Bez_v_tmp.data(), GL_STATIC_DRAW);
+                glDrawArrays(GL_LINES, 0, Bez_v_tmp.size());
             }
-        }
 
-        glLineWidth(30.0);
+            if (wireframe == 1)
+            {
+                glUniform1i(surface_loc, 3);
 
-        if (cont_mesh)
-        {
-            glUniform1i(surface_loc, 2);
-            glEnableVertexAttribArray(2);
-            glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[2]);
+                glEnableVertexAttribArray(4);
+                glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[4]);
+                glBufferData(GL_ARRAY_BUFFER, norm_Bezier.size() * sizeof(GLfloat), norm_Bezier.data(), GL_STATIC_DRAW);
 
-            glBufferData(GL_ARRAY_BUFFER, cont_v_tmp.size() * sizeof(GLfloat), cont_v_tmp.data(), GL_STATIC_DRAW);
-            glDrawArrays(GL_LINES, 0, cont_v_tmp.size());
-        }
+                glEnableVertexAttribArray(3);
+                glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[3]);
+                glBufferData(GL_ARRAY_BUFFER, sur_Bezier.size() * sizeof(GLfloat), sur_Bezier.data(), GL_STATIC_DRAW);
 
-        if (wireframe == 0)
-        {
-            glUniform1i(surface_loc, 1);
-            glEnableVertexAttribArray(1);
-            glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[1]);
-            glBufferData(GL_ARRAY_BUFFER, Bez_v_tmp.size() * sizeof(GLfloat), Bez_v_tmp.data(), GL_STATIC_DRAW);
-            glDrawArrays(GL_LINES, 0, Bez_v_tmp.size());
-        }
+                glDrawArrays(GL_TRIANGLES, 0, sur_Bezier.size());
+            }
 
-        if (wireframe == 1)
-        {
-            glUniform1i(surface_loc, 3);
+            glBindVertexArray(0);
+            glUseProgram(0);
 
-            glEnableVertexAttribArray(4);
-            glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[4]);
-            glBufferData(GL_ARRAY_BUFFER, norm_Bezier.size() * sizeof(GLfloat), norm_Bezier.data(), GL_STATIC_DRAW);
+            ImGui::Render();
+            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-            glEnableVertexAttribArray(3);
-            glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[3]);
-            glBufferData(GL_ARRAY_BUFFER, sur_Bezier.size() * sizeof(GLfloat), sur_Bezier.data(), GL_STATIC_DRAW);
-
-            glDrawArrays(GL_TRIANGLES, 0, sur_Bezier.size());
-        }
-
-        glBindVertexArray(0);
-        glUseProgram(0);
-
-        ImGui::Render();
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-        keyCallBack();
-        glfwSwapBuffers(g_window);
+            keyCallBack();
+            glfwSwapBuffers(g_window);
     }
 
-    Bezier.clear();
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
-    glfwDestroyWindow(g_window);
-    glfwTerminate();
+        Bezier.clear();
+        ImGui_ImplOpenGL3_Shutdown();
+        ImGui_ImplGlfw_Shutdown();
+        ImGui::DestroyContext();
+        glfwDestroyWindow(g_window);
+        glfwTerminate();
 }
 
 void framebufferSizeCallback(GLFWwindow* window, int width, int height)
@@ -918,7 +923,7 @@ void mousebuttonCallback(GLFWwindow* window, int button, int action, int mods)
             //GLfloat winY = (float)v[3] - (float)ypos;
             GLfloat Z;
 
-            glReadPixels(xpos, ypos, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &Z);
+            //glReadPixels(xpos, ypos, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &Z);
 
             //gluProject(1.0, 0.0, 0.0, m, p, v, &winX, &winY, &winZ);
 
