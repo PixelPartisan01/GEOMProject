@@ -583,6 +583,8 @@ std::vector<GLfloat> genWireframe()
 
 bool credits = false;
 bool show_window = true;
+int selectedPointXId = 0;
+int selectedPointYId = 0;
 int selectedPointId = 0;
 float selectedPointX = 0;
 float selectedPointY = 0;
@@ -594,6 +596,9 @@ float Z = 0.0;
 
 bool point_selected = false;
 bool focused = false;
+bool isActive = false;
+bool selection = false;
+GLint selected_location = 0;
 
 void mainRenderLoop()
 {
@@ -609,6 +614,8 @@ void mainRenderLoop()
     GLint temp = 1;
 
     genGrid(slider_N, slider_M);
+
+    selected_location = glGetUniformLocation(shader_program_object, "selected_cont_p");
 
     while (!glfwWindowShouldClose(g_window))
     {
@@ -661,24 +668,41 @@ void mainRenderLoop()
 
             if (ImGui::CollapsingHeader("Control Points"))
             {
-                ImGui::InputInt("Kiv. pont Id:", &selectedPointId);
-                ImGui::InputFloat("Kiv. pont X poz:", &selectedPointX);
-                ImGui::InputFloat("Kiv. pont Y poz:", &selectedPointY);
-                ImGui::InputFloat("Kiv. pont Z poz:", &selectedPointZ);
+                selection = true;
+                //ImGui::InputInt("Kiv. pont Id:", &selectedPointId);
+                ImGui::InputInt("Controll Pont X", &selectedPointXId);
+                ImGui::InputInt("Controll Pont Y", &selectedPointYId);
+                ImGui::SliderFloat("X", &controll_vertices[selectedPointId][0], -10, 10);
+                isActive = ImGui::IsItemActive();
+                ImGui::SliderFloat("Y:", &controll_vertices[selectedPointId][1], -10, 10);
+                isActive = isActive ? true : ImGui::IsItemActive();
+                ImGui::SliderFloat("Z", &controll_vertices[selectedPointId][2], -10, 10);
+                isActive = isActive ? true : ImGui::IsItemActive();
 
-                // Button to trigger action
-                if (ImGui::Button("Rendben"))
+                if (selectedPointYId >= slider_M)
                 {
-                    // Handle button click event
-                    std::cout << "X Value entered: " << selectedPointX << std::endl;
-                    std::cout << "Y Value entered: " << selectedPointY << std::endl;
-                    std::cout << "Z Value entered: " << selectedPointZ << std::endl;
-                    controll_vertices[selectedPointId][0] = selectedPointX;
-                    controll_vertices[selectedPointId][1] = selectedPointY;
-                    controll_vertices[selectedPointId][2] = selectedPointZ;
-                    std::cout << "0. control pont X: " << controll_vertices[selectedPointId][0] << std::endl;
-                    std::cout << "0. control pont Y: " << controll_vertices[selectedPointId][1] << std::endl;
-                    std::cout << "0. control pont Z: " << controll_vertices[selectedPointId][2] << std::endl;
+                    selectedPointYId = slider_M - 1;
+                }
+                else if (selectedPointYId < 0)
+                {
+                    selectedPointYId = 0;
+                }
+
+
+                if (selectedPointXId >= slider_N)
+                {
+                    selectedPointXId = slider_N - 1;
+                }
+                else if (selectedPointXId < 0)
+                {
+                    selectedPointXId = 0;
+                }
+
+                selectedPointId = selectedPointYId + (selectedPointXId * slider_M);
+
+
+                if (isActive)
+                {
                     int br = 1;
                     cont_v_tmp.clear();
                     for (int i = 0; i < controll_vertices.size(); i++)
@@ -713,9 +737,9 @@ void mainRenderLoop()
 
                     Bez_v_tmp = genWireframe();
                     genBezier(slider_N, slider_M);
-
                 }
             }
+            else { selection = false; }
 
             ImGui::End();
         }
@@ -825,6 +849,8 @@ void mainRenderLoop()
                 glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object[0]);
                 for (int i = 0; i < controll_vertices.size(); i++)
                 {
+                    if(selectedPointId == i && selection) { glUniform1i(glGetUniformLocation(shader_program_object, "selected_cont_p"), true); }
+                    else{ { glUniform1i(glGetUniformLocation(shader_program_object, "selected_cont_p"), false); } }
                     glBufferData(GL_ARRAY_BUFFER, controll_vertices[i].size() * sizeof(GLfloat), controll_vertices[i].data(), GL_STATIC_DRAW);
                     glDrawArrays(GL_POINTS, 0, controll_vertices[i].size());
                 }

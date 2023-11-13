@@ -10,9 +10,11 @@ uniform mat4	proj, view, model, vert;
 uniform int		surface;
 uniform vec3 light_pos;
 uniform int shading;
+uniform bool selected_cont_p;
 
 in vec4 a_Position;
 in vec3 a_Normal; 
+
 
 out vec3 fragColor;
 out vec4 Normal;
@@ -28,7 +30,9 @@ void main()
 	{
 		control_mesh = 1;
 		gl_Position = proj * view * model * vert * vec4(position, 1.0);
-		fragColor = vec3(229.0f / 255.0f, 2.0f / 255.0f, 245.0f / 255.0f);
+
+		if(selected_cont_p){fragColor = vec3(1.0f, 0.0f, 0.0f);}
+		else{fragColor = vec3(229.0f / 255.0f, 2.0f / 255.0f, 245.0f / 255.0f);}
 	}
 	else if (surface == 1)
 	{
