@@ -62,10 +62,6 @@ GLFWwindow* g_window = 0;
 std::vector<std::vector<GLfloat>> controll_vertices;
 std::vector<GLfloat> sur;
 
-//std::vector<GLfloat> controll_vertices[4][4];
-//
-//GLint N = 6;
-//GLint M = 5;
 GLfloat step_u = 0.03;
 GLfloat step_v = 0.03;
 
@@ -82,6 +78,7 @@ int    wireframe = 0;
 bool    surface = false;
 bool    cont_mesh = true;
 bool    cont_points = true;
+bool    selected = false;
 float   slider_x = 0.0f;
 float   slider_y = 0.0f;
 float   slider_z = 0.0f;
@@ -170,6 +167,28 @@ GLdouble deltaTime()
 
 void keyCallBack()
 {
+    
+    if (glfwGetKey(g_window, GLFW_KEY_LEFT))
+    {
+        rotateY = rotateY + 1.0f;
+        rotate_moved = true;
+    }
+    if (glfwGetKey(g_window, GLFW_KEY_RIGHT))
+    {
+        rotateY = rotateY - 1.0f;
+        rotate_moved = true;
+    }
+    if (glfwGetKey(g_window, GLFW_KEY_UP))
+    {
+        rotateX += 1.0f;
+        rotate_moved = true;
+    }
+    if (glfwGetKey(g_window, GLFW_KEY_DOWN))
+    {
+        rotateX -= 1.0f;
+        rotate_moved = true;
+    }
+
     if (glfwGetKey(g_window, GLFW_KEY_A))
     {
         cam_pos[0] -= cam_speed * DT;
@@ -199,26 +218,6 @@ void keyCallBack()
     {
         cam_pos[1] -= cam_speed * DT;
         cam_moved = true;
-    }
-    if (glfwGetKey(g_window, GLFW_KEY_LEFT))
-    {
-        rotateY = rotateY + 1.0f;
-        rotate_moved = true;
-    }
-    if (glfwGetKey(g_window, GLFW_KEY_RIGHT))
-    {
-        rotateY = rotateY - 1.0f;
-        rotate_moved = true;
-    }
-    if (glfwGetKey(g_window, GLFW_KEY_UP))
-    {
-        rotateX += 1.0f;
-        rotate_moved = true;
-    }
-    if (glfwGetKey(g_window, GLFW_KEY_DOWN))
-    {
-        rotateX -= 1.0f;
-        rotate_moved = true;
     }
 }
 
@@ -252,7 +251,7 @@ GLfloat factorial(int n)
     return factorial;
 }
 
-/* MxN - es kontroll h�l� legener�l�sa */
+/* MxN - es kontroll háló legenerálása */
 void genGrid(GLint N, GLint M)
 {
     controll_vertices.clear();
@@ -260,13 +259,11 @@ void genGrid(GLint N, GLint M)
     GLfloat r;
     srand((unsigned int)time(NULL));
 
-    //printf("\nKontroll pontok:\n\n");
     for (GLfloat i = 0.0; i < (GLfloat)N; i++)
     {
         for (GLfloat j = 0.0; j < (GLfloat)M; j++)
         {
-            //r = (GLfloat)(rand() % M);
-            //r = 0.0;
+
             if ((i == 0.0f || j == 0.0f) || (i == N - 1 || j == M - 1))
             {
                 r = 0.0;
@@ -277,12 +274,14 @@ void genGrid(GLint N, GLint M)
             }
 
             controll_vertices.push_back({ i,j,r });
-            //printf("[%lf; %lf; %lf]\n", i, j, r);
         }
     }
 
     genBezier(N, M);
 }
+
+
+
 
 GLfloat B(GLint n_m, GLint i_j, GLfloat u_v)
 {
@@ -303,12 +302,10 @@ void genBezier(GLint N, GLint M)
 
     for (GLdouble u = 0.0f; u <= (GLdouble)1.0f + ((1.0 / (GLdouble)slider_U) / (GLdouble)slider_U); u += 1.0 / (GLdouble)slider_U)
     {
-        //printf("%lf\n", u);
         num_V = 0;
         for (GLdouble v = 0.0f; v <= (GLdouble)1.0f + ((1.0 / (GLdouble)slider_V) / (GLdouble)slider_V); v +=  1.0 / (GLdouble)slider_V)
         {
             num_V++;
-            //printf("%lf\n", v);
             for (GLint i = 0; i < N; i++)
             {
                 for (GLint j = 0; j < M; j++)
@@ -437,8 +434,6 @@ int init()
         return -4;
     }
 
-    //GLint u_time_loc = glGetUniformLocation(shader_program_object, "u_time_s");
-
     view_mat_location = glGetUniformLocation(shader_program_object, "view");
     proj_mat_location = glGetUniformLocation(shader_program_object, "proj");
     model_mat_location = glGetUniformLocation(shader_program_object, "model");
@@ -505,8 +500,6 @@ void genSurface()
             norm_Bezier.push_back((GLfloat)c.v[2]);
         }
 
-        //printf("{%lf, %lf, %lf}\n", c.v[0], c.v[1], c.v[2]);
-
         A = vec3(Bezier[i + 1][0], Bezier[i + 1][1], Bezier[i + 1][2]);
         B = vec3(Bezier[i + num_V + 1][0], Bezier[i + num_V + 1][1], Bezier[i + num_V + 1][2]);
         C = vec3(Bezier[i + num_V][0], Bezier[i + num_V][1], Bezier[i + num_V][2]);
@@ -534,13 +527,11 @@ void genSurface()
             norm_Bezier.push_back((GLfloat)c.v[1]);
             norm_Bezier.push_back((GLfloat)c.v[2]);
         }
-        //printf("{%lf, %lf, %lf}\n", c.v[0], c.v[1], c.v[2]);
 
         br++;
     }
 }
 
-/*TODO*/
 std::vector<GLfloat> genWireframe()
 {
     std::vector<GLfloat> tmp;
@@ -638,11 +629,12 @@ void mainRenderLoop()
         {
             ImGui::Begin("Menu");
 
+            ImGui::Checkbox("Control Mesh", &cont_mesh);
+            selected = selected ? true : ImGui::IsItemActive();
+            ImGui::Checkbox("Control Points", &cont_points);
+            selected = selected ? true : ImGui::IsItemActive();
 
-            ImGui::Checkbox("Controll Mesh", &cont_mesh);
-            ImGui::Checkbox("Controll Points", &cont_points);
-
-            if (ImGui::CollapsingHeader("Surface Controlls"))
+            if (ImGui::CollapsingHeader("Surface Controls"))
             {
                 ImGui::RadioButton("Wireframe", &wireframe, 0);
                 ImGui::RadioButton("Surface", &wireframe, 1);
@@ -655,23 +647,19 @@ void mainRenderLoop()
                 ImGui::SliderInt("V", &slider_V, 2, 50);
             }
 
-            if (ImGui::CollapsingHeader("Light Controlls"))
+            if (ImGui::CollapsingHeader("Light Controls"))
             {
-                ImGui::RadioButton("Flat Shading", &shading, 0);
-                ImGui::RadioButton("Gouraud Shading", &shading, 1);
 
                 ImGui::SliderFloat("Light X", &light_pos[0], -10.0, 10.0);
                 ImGui::SliderFloat("Light Y", &light_pos[1], -10.0, 10.0);
                 ImGui::SliderFloat("Light Z", &light_pos[2], -10.0, 10.0);
-
             }
 
             if (ImGui::CollapsingHeader("Control Points"))
             {
                 selection = true;
-                //ImGui::InputInt("Kiv. pont Id:", &selectedPointId);
-                ImGui::InputInt("Controll Pont X", &selectedPointXId);
-                ImGui::InputInt("Controll Pont Y", &selectedPointYId);
+                ImGui::InputInt("Control Point X", &selectedPointXId);
+                ImGui::InputInt("Control Point Y", &selectedPointYId);
                 ImGui::SliderFloat("X", &controll_vertices[selectedPointId][0], -10, 10);
                 isActive = ImGui::IsItemActive();
                 ImGui::SliderFloat("Y:", &controll_vertices[selectedPointId][1], -10, 10);
@@ -739,12 +727,10 @@ void mainRenderLoop()
                     genBezier(slider_N, slider_M);
                 }
             }
-            else { selection = false; }
+            else { selection = false;}
 
             ImGui::End();
         }
-
-            //std::cout << glGetError() << std::endl;
 
             if (slider_U == 0) slider_U = 1;
             if (slider_V == 0) slider_V = 1;
@@ -829,8 +815,8 @@ void mainRenderLoop()
                 mat4 Tto = translate(identity_mat4(), vec3(2.0f, 2.0f, 2.0f));
                 mat4 Tback = translate(identity_mat4(), vec3(-2.0f, -2.0f, -2.0f));
 
-                mat4 model_mat = identity_mat4(); // Initialize with identity matrix
-                model_mat = model_mat * Tto * RY * RX * Tback; // Combine transformations
+                mat4 model_mat = identity_mat4();
+                model_mat = model_mat * Tto * RY * RX * Tback; 
 
                 glUniformMatrix4fv(model_mat_location, 1, GL_FALSE, model_mat.m);
             }
@@ -839,7 +825,6 @@ void mainRenderLoop()
 
             glPointSize(10.0);
 
-            /*TODO: Fix This*/
             glBindVertexArray(vertex_array_object[0]);
 
             if (cont_points)
@@ -934,9 +919,7 @@ void mousebuttonCallback(GLFWwindow* window, int button, int action, int mods)
 
             point_selected = !point_selected;
             double xpos, ypos;
-            //getting cursor position
             glfwGetCursorPos(window, &xpos, &ypos);
-            std::cout << "Cursor Position at (" << xpos << " : " << ypos << ")" << std::endl;
 
             mat4 t;
             vec3 tv;
@@ -945,31 +928,7 @@ void mousebuttonCallback(GLFWwindow* window, int button, int action, int mods)
             GLdouble winY;
             GLdouble winZ;
 
-
-            //GLfloat winY = (float)v[3] - (float)ypos;
-            GLfloat Z;
-
-            //glReadPixels(xpos, ypos, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &Z);
-
-            //gluProject(1.0, 0.0, 0.0, m, p, v, &winX, &winY, &winZ);
-
-            //auto p = proj_mat * model_mat * vec4(1.0, 0.0, 0.0, 1.0);
-
-            //gluUnProject(xpos, v[3] - ypos, Z, m, p, v, &winX, &winY, &winZ);
-
-            //auto ve = (proj_mat * view_mat * model_mat * vert_mat * vec4(2.0, 2.0, 1.0, 1.0));
-            //
-            //printf("%lf %lf, %lf\n", std::clamp((int)winX, 0, slider_N), std::clamp((int)winY, 0, slider_M), std::clamp((int)winY, 0, 1));
-
-            //auto p = proj_mat * model_mat * vec4(0.0, 0.0, 0.0, 1.0);
-
-            //vec4 p = proj_mat * view_mat * vec4(1.0, 0.0, 0.0, 1.0);
-            //printf("(%lf, %lf)\n", p.v[0], p.v[1], p.v[2]);
-
-            //vec4 sp = proj_mat * view_mat * (vec4(xpos, ypos, 0.0, 1.0));
-            //
-            //printf("(%lf, %lf)\n", sp.v[0], sp.v[1], sp.v[2]);
-            
+            GLfloat Z;            
         }
     }
 }
